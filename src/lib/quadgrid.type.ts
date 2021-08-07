@@ -1,6 +1,7 @@
 export interface iQuadGrid {
     cellItemsMax?: number,
     cellDepthMax?: number,
+    cellMinSize?: number,
     root: iQuadNode;
 }
 

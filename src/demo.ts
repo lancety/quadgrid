@@ -73,8 +73,8 @@ function _random(min, max) {
 
 (window as any).addNodes = function (amount: number, large = false) {
     states.rects.push(...Array(amount).fill(null).map((ignore, ind) => {
-        // const w = _random(min, max) * (large ? 30 : 1);
-        // const h = _random(min, max) * (large ? 30 : 1);
+        // const w = _random(min, max) * (large ? 30 : 1) / 2;
+        // const h = _random(min, max) * (large ? 30 : 1) / 2;
         const w = _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 30 : 1) / 2;
         const h = _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 30 : 1) / 2;
         return [
@@ -124,11 +124,11 @@ function _updateUI() {
         if (states.activeRects.has(rects)) {
             ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
             // @ts-ignore
-            ctx.fillRect(...rects);
+            ctx.fillRect(..._getBound(rects));
         } else {
             ctx.strokeStyle = 'rgba(255, 0, 0, 1)';
             // @ts-ignore
-            ctx.strokeRect(...rects)
+            ctx.strokeRect(..._getBound(rects))
         }
     })
 }

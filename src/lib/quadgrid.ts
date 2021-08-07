@@ -11,9 +11,11 @@ export function QuadNode(bound: iBound, level: number): iQuadNode {
 
 export class QuadGrid implements iQuadGrid {
     root: iQuadNode;
+    cellMinSize: number;
 
     constructor(public width, public height,
                 public cellDepthMax = 6, public cellItemsMax = 10) {
+        this.cellMinSize = Math.min(width, height) / Math.pow(2, cellDepthMax);
         this.root = QuadNode([width / 2, height / 2, width / 2, height / 2], 0);
     }
 
@@ -62,8 +64,8 @@ export class QuadGrid implements iQuadGrid {
             verticalMidpoint = node.bound[0] ,
             horizontalMidpoint = node.bound[1];
 
-        const startIsNorth = rect[1] < horizontalMidpoint,
-            startIsWest = rect[0] < verticalMidpoint,
+        const startIsNorth = rect[1] - rect[3] < horizontalMidpoint,
+            startIsWest = rect[0] - rect[2] < verticalMidpoint,
             endIsEast = rect[0] + rect[2] > verticalMidpoint,
             endIsSouth = rect[1] + rect[3] > horizontalMidpoint;
 
@@ -96,7 +98,7 @@ export class QuadGrid implements iQuadGrid {
     }
 
     inside(bound: iBound, rect: iBound) {
-        return bound[0] - bound[2] > rect[0] && bound[1] - bound[3] > rect[1] &&
+        return bound[0] - bound[2] > rect[0] - rect[2] && bound[1] - bound[3] > rect[1] - rect[3] &&
             bound[0] + bound[2] < rect[0] + rect[2] &&
             bound[1] + bound[3] < rect[1] + rect[3];
     }

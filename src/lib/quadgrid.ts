@@ -1,4 +1,4 @@
-import {iBound, iQuadGridFactory, iQuadNode} from "./quadgrid.type";
+import {iBound, iQuadGrid, iQuadNode} from "./quadgrid.type";
 
 export function QuadNode (bound: iBound, level: number): iQuadNode {
     return {
@@ -9,9 +9,8 @@ export function QuadNode (bound: iBound, level: number): iQuadNode {
     }
 }
 
-export class QuadGridFactory implements iQuadGridFactory {
+export class QuadGrid implements iQuadGrid {
     root: iQuadNode;
-    rects: iBound[] = [];
 
     constructor(public width, public height,
                 public cellDepthMax = 6, public cellItemsMax = 10) {
@@ -111,7 +110,6 @@ export class QuadGridFactory implements iQuadGridFactory {
     }
 
     insertAsGrid(node: iQuadNode, rect: iBound) {
-        this.rects.push(rect);
 
         const newCoverTest = this.inside(node.bound, rect);
         if (newCoverTest === true) {
@@ -147,7 +145,6 @@ export class QuadGridFactory implements iQuadGridFactory {
     }
 
     insertAsTree(node: iQuadNode, rect: iBound) {
-        this.rects.push(rect);
 
         if (node.nodes.length) {
             this.insertBatch(node, rect, "insertAsTree");

@@ -1,4 +1,4 @@
-import {QuadGridFactory} from "./lib/quadgrid";
+import {QuadGrid} from "./lib/quadgrid";
 import {iBound, iQuadNode} from "./lib/quadgrid.type";
 
 const width = 1200, height = 800;
@@ -11,7 +11,7 @@ while (boundSize > min) {
     maxDepth++;
 }
 
-const factory = new QuadGridFactory(width, height, maxDepth, maxItems);
+const grid = new QuadGrid(width, height, maxDepth, maxItems);
 const focus = [0, 0, 50, 50];
 
 /*
@@ -19,6 +19,7 @@ const focus = [0, 0, 50, 50];
 * */
 const states = {
     activeRects: new Set() as Set<iBound>,
+    rects: [] as iBound[],
 }
 
 /*
@@ -56,7 +57,7 @@ canvas.addEventListener("mouseout", function (e) {
 (function render() {
     if (mouseOn) {
         states.activeRects.clear();
-        states.activeRects = factory.retrieve(factory.root, focus);
+        states.activeRects = grid.retrieve(grid.root, focus);
     }
     _updateUI();
     window.requestAnimationFrame(render);
@@ -71,7 +72,7 @@ function _random(min, max) {
 }
 
 (window as any).addNodes = function (amount: number, large = false) {
-    const rects = Array(amount).fill(null).map((ignore, ind) => {
+    states.rects.push(...Array(amount).fill(null).map((ignore, ind) => {
         return [
             _random(0, width - max),
             _random(0, height - max),
@@ -80,17 +81,15 @@ function _random(min, max) {
             _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 10 : 1),
             _random(min, max) * (large || (amount >= 10 && ind > amount * 0.9) ? 10 : 1),
         ] as iBound
-    })
+    }))
 
     const start = performance.now();
-    for (let i = 0; i < rects.length; i++) {
-        factory.insertAsGrid(factory.root, rects[i])
+    for (let i = 0; i < states.rects.length; i++) {
+        grid.insertAsGrid(grid.root, states.rects[i])
         // factory.insertAsTree(factory.root, rects[i])
     }
     const startUi = performance.now();
     console.log(`add ${amount} duration`, startUi - start)
-    _updateUI();
-    console.log(`ui ${amount} duration`, performance.now() - startUi)
 }
 
 
@@ -100,7 +99,7 @@ function _random(min, max) {
 function _updateUI() {
     ctx.clearRect(0, 0, width, height);
 
-    document.getElementById("info_count").innerText = factory.rects.length + "";
+    document.getElementById("info_count").innerText = states.rects.length + "";
     document.getElementById("info_involved").innerText = (states.activeRects?.size || 0) + "";
 
     // draw focus rect
@@ -111,19 +110,19 @@ function _updateUI() {
     }
 
     // draw grid
-    _drawGridNodes(factory.root);
-    _drawGridTaken(factory.root);
+    _drawGridNodes(grid.root);
+    _drawGridTaken(grid.root);
 
     // draw objects
-    factory.rects.forEach(bound => {
-        if (states.activeRects.has(bound)) {
+    states.rects.forEach(rects => {
+        if (states.activeRects.has(rects)) {
             ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
             // @ts-ignore
-            ctx.fillRect(...bound);
+            ctx.fillRect(...rects);
         } else {
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.strokeStyle = 'rgba(255, 0, 0, 1)';
             // @ts-ignore
-            ctx.strokeRect(...bound)
+            ctx.strokeRect(...rects)
         }
     })
 }

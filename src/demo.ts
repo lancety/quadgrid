@@ -4,21 +4,21 @@ import {iBound, iQuadNode} from "./lib/quadgrid.type";
 const width = 1200, height = 800;
 const min = 2, max = 10;
 
-let maxDepth = 0;
+let maxDepth = 0, maxItems = 2;
 let boundSize = Math.min(width, height);
 while (boundSize > min) {
     boundSize /= 2;
     maxDepth++;
 }
 
-const factory = new QuadGridFactory(width, height, maxDepth);
-const focus = [0, 0, max, max];
+const factory = new QuadGridFactory(width, height, maxDepth, maxItems);
+const focus = [0, 0, 50, 50];
 
 /*
 * states
 * */
 const states = {
-    activeNodes: new Set() as Set<iBound>,
+    activeRects: new Set() as Set<iBound>,
 }
 
 /*
@@ -27,7 +27,7 @@ const states = {
 const canvas = document.getElementById("canvas")
 canvas.setAttribute("width", width + "");
 canvas.setAttribute("height", height + "");
-canvas.style.background = "#333";
+canvas.style.background = "#111";
 const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 
 
@@ -35,7 +35,7 @@ const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 * mouse event
 * */
 let mouseOn = false;
-canvas.addEventListener("mousemove", function(e: any) {
+canvas.addEventListener("mousemove", function (e: any) {
     mouseOn = true;
     if (!e.offsetX) {
         e.offsetX = e.layerX - e.target.offsetLeft;
@@ -53,18 +53,14 @@ canvas.addEventListener("mouseout", function (e) {
 * main
 * */
 
-(function render(){
+(function render() {
     if (mouseOn) {
-        // states.activeNodes.clear();
-        // states.activeNodes = factory.retrieve(factory.root, focus);
-        console.log("states");
+        states.activeRects.clear();
+        states.activeRects = factory.retrieve(factory.root, focus);
     }
     _updateUI();
     window.requestAnimationFrame(render);
 })()
-
-
-
 
 
 /*
@@ -73,7 +69,8 @@ canvas.addEventListener("mouseout", function (e) {
 function _random(min, max) {
     return Math.round(min + (Math.random() * (max - min)));
 }
-(window as any).addNodes = function(amount: number, large = false) {
+
+(window as any).addNodes = function (amount: number, large = false) {
     const rects = Array(amount).fill(null).map((ignore, ind) => {
         return [
             _random(0, width - max),
@@ -86,8 +83,9 @@ function _random(min, max) {
     })
 
     const start = performance.now();
-    for (let i=0;i< rects.length; i++) {
+    for (let i = 0; i < rects.length; i++) {
         factory.insertAsGrid(factory.root, rects[i])
+        // factory.insertAsTree(factory.root, rects[i])
     }
     const startUi = performance.now();
     console.log(`add ${amount} duration`, startUi - start)
@@ -100,10 +98,10 @@ function _random(min, max) {
 * render util
 * */
 function _updateUI() {
-    ctx.clearRect(0,0,width, height);
+    ctx.clearRect(0, 0, width, height);
 
     document.getElementById("info_count").innerText = factory.rects.length + "";
-    document.getElementById("info_involved").innerText = ((states.activeNodes?.size || 0) / factory.rects.length) + "";
+    document.getElementById("info_involved").innerText = (states.activeRects?.size || 0) + "";
 
     // draw focus rect
     if (mouseOn) {
@@ -112,31 +110,45 @@ function _updateUI() {
         ctx.fillRect(...focus);
     }
 
-    // draw objects
-    factory.rects.forEach(bound => {
-        if (states.activeNodes.has(bound)) {
-            ctx.fillStyle = 'rgba(0, 255, 0)';
-        } else {
-            ctx.fillStyle = 'rgba(255, 255, 255)';
-        }
-        // @ts-ignore
-        ctx.fillRect(...bound);
-    })
-
     // draw grid
     _drawGridNodes(factory.root);
+    _drawGridTaken(factory.root);
+
+    // draw objects
+    factory.rects.forEach(bound => {
+        if (states.activeRects.has(bound)) {
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            // @ts-ignore
+            ctx.fillRect(...bound);
+        } else {
+            ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+            // @ts-ignore
+            ctx.strokeRect(...bound)
+        }
+    })
 }
 
 function _drawGridNodes(node: iQuadNode) {
     if (node.nodes.length) {
         node.nodes.forEach(node => _drawGridNodes(node));
     } else {
-        if (node.taken) {
-            ctx.strokeStyle = "rgba(255,255,255, 0.6)";
-        } else {
-            ctx.strokeStyle = "rgba(255, 0, 255, 0.6)";
+        if (!node.taken) {
+            ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
+            // @ts-ignore
+            ctx.strokeRect(...node.bound)
         }
-        // @ts-ignore
-        ctx.strokeRect(...node.bound)
+    }
+}
+
+function _drawGridTaken(node: iQuadNode) {
+    if (node.nodes.length) {
+        node.nodes.forEach(node => _drawGridTaken(node));
+    } else {
+        if (node.taken) {
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+            ctx.fillStyle = "rgba(255,255,255, 0.8)";
+            // @ts-ignore
+            ctx.fillRect(...node.bound)
+        }
     }
 }

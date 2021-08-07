@@ -14,7 +14,7 @@ export class QuadGridFactory implements iQuadGridFactory {
     rects: iBound[] = [];
 
     constructor(public width, public height,
-                public cellDepthMax = 6, public cellObjMax = 10) {
+                public cellDepthMax = 6, public cellItemsMax = 10) {
         this.root = QuadNode([0, 0, width, height], 0);
     }
 
@@ -155,7 +155,7 @@ export class QuadGridFactory implements iQuadGridFactory {
         }
 
         node.rects.push(rect);
-        if (node.rects.length > this.cellObjMax && node.level < this.cellDepthMax) {
+        if (node.rects.length > this.cellItemsMax && node.level < this.cellDepthMax) {
             if (!node.nodes.length) {
                 this.split(node);
             }
@@ -182,7 +182,6 @@ export class QuadGridFactory implements iQuadGridFactory {
     retrieve(node: iQuadNode, bound: iBound, rectStore?: iBound[]): Set<iBound> {
         const indexes = this.getIndex(node, bound);
         const store = rectStore || [];
-        store.push(...node.rects);
 
         if (node.nodes.length) {
             indexes & 0b1 && this.retrieve(node.nodes[0], bound, store);
@@ -191,12 +190,8 @@ export class QuadGridFactory implements iQuadGridFactory {
             indexes & 0b1000 && this.retrieve(node.nodes[3], bound, store);
         }
 
-        if (store.length > 0) {
-            console.log("111")
-        }
-
         if (rectStore) {
-            rectStore.push(...store);
+            node.nodes.length === 0 && rectStore.push(...node.rects);
         } else {
             return new Set(store);
         }

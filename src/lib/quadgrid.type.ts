@@ -1,5 +1,5 @@
 export interface iQuadGridFactory {
-    cellObjMax?: number,
+    cellItemsMax?: number,
     cellDepthMax?: number,
     root: iQuadNode;
     rects: iBound[];

@@ -1,0 +1,34 @@
+{
+  "name": "quadgrid",
+  "version": "1.0.0",
+  "description": "Store and retrieve rect bounds in quadtree structure; Generate quadgrid based on given rect bounds; ",
+  "main": "index.js",
+  "dependencies": {
+    "http-server": "^0.12.3",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.3.5",
+    "webpack": "^5.49.0",
+    "webpack-cli": "^4.7.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "server": "http-server -o --cors -p 6688 ./demo",
+    "pack": "webpack --progress --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lancety/quadgrid.git"
+  },
+  "keywords": [
+    "quadtree",
+    "quadgrid",
+    "js",
+    "ts"
+  ],
+  "author": "lancety",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lancety/quadgrid/issues"
+  },
+  "homepage": "https://github.com/lancety/quadgrid#readme"
+}

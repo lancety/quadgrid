@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "outDir": "./demo/script/",
+    "target": "es2019",
+    "lib": ["es2019", "DOM"],
+    "moduleResolution": "node",
+    "module": "esnext",
+
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": [
+    "src"
+  ]
+}

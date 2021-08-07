@@ -58,15 +58,15 @@ export class QuadGridFactory implements iQuadGridFactory {
         ], nextLevel);
     }
 
-    getIndex(node: iQuadNode, bound: iBound) {
+    getIndex(node: iQuadNode, rect: iBound) {
         let indexes = 0b0,
             verticalMidpoint = node.bound[0] + (node.bound[2] / 2),
             horizontalMidpoint = node.bound[1] + (node.bound[3] / 2);
 
-        const startIsNorth = bound[1] < horizontalMidpoint,
-            startIsWest = bound[0] < verticalMidpoint,
-            endIsEast = bound[0] + bound[2] > verticalMidpoint,
-            endIsSouth = bound[1] + bound[3] > horizontalMidpoint;
+        const startIsNorth = rect[1] < horizontalMidpoint,
+            startIsWest = rect[0] < verticalMidpoint,
+            endIsEast = rect[0] + rect[2] > verticalMidpoint,
+            endIsSouth = rect[1] + rect[3] > horizontalMidpoint;
 
         //lt
         if (startIsWest && startIsNorth) {
@@ -96,37 +96,37 @@ export class QuadGridFactory implements iQuadGridFactory {
         node.rects.push(...this.objectsAll([], node));
     }
 
-    inside(boundSmall: iBound, boundLarge: iBound) {
-        return boundSmall[0] > boundLarge[0] && boundSmall[1] > boundLarge[1] &&
-            boundSmall[0] + boundSmall[2] < boundLarge[0] + boundLarge[2] &&
-            boundSmall[1] + boundSmall[3] < boundLarge[1] + boundLarge[3];
+    inside(bound: iBound, rect: iBound) {
+        return bound[0] > rect[0] && bound[1] > rect[1] &&
+            bound[0] + bound[2] < rect[0] + rect[2] &&
+            bound[1] + bound[3] < rect[1] + rect[3];
     }
 
-    insertBatch(node: iQuadNode, bound: iBound, method: string) {
-        const binaryIndexes = this.getIndex(node, bound);
-        binaryIndexes & 0b1 && this[method](node.nodes[0], bound);
-        binaryIndexes & 0b10 && this[method](node.nodes[1], bound);
-        binaryIndexes & 0b100 && this[method](node.nodes[2], bound);
-        binaryIndexes & 0b1000 && this[method](node.nodes[3], bound);
+    insertBatch(node: iQuadNode, rect: iBound, method: string) {
+        const binaryIndexes = this.getIndex(node, rect);
+        binaryIndexes & 0b1 && this[method](node.nodes[0], rect);
+        binaryIndexes & 0b10 && this[method](node.nodes[1], rect);
+        binaryIndexes & 0b100 && this[method](node.nodes[2], rect);
+        binaryIndexes & 0b1000 && this[method](node.nodes[3], rect);
     }
 
-    insertAsGrid(node: iQuadNode, bound: iBound) {
-        this.rects.push(bound);
+    insertAsGrid(node: iQuadNode, rect: iBound) {
+        this.rects.push(rect);
 
-        const newCoverTest = this.inside(node.bound, bound);
+        const newCoverTest = this.inside(node.bound, rect);
         if (newCoverTest === true) {
             if (node.covered !== true) {
                 this.merge(node);
                 node.taken = true;
                 node.covered = true;
             }
-            node.rects.push(bound);
+            node.rects.push(rect);
             return;
         }
 
-        node.rects.push(bound);
+        node.rects.push(rect);
         if (node.nodes.length) {
-            this.insertBatch(node, bound, "insertAsGrid");
+            this.insertBatch(node, rect, "insertAsGrid");
             node.rects.splice(0);
         } else if (node.covered !== true) {
             if (node.level < this.cellDepthMax) {
@@ -146,15 +146,15 @@ export class QuadGridFactory implements iQuadGridFactory {
         }
     }
 
-    insertAsTree(node: iQuadNode, bound: iBound) {
-        this.rects.push(bound);
+    insertAsTree(node: iQuadNode, rect: iBound) {
+        this.rects.push(rect);
 
         if (node.nodes.length) {
-            this.insertBatch(node, bound, "insertAsTree");
+            this.insertBatch(node, rect, "insertAsTree");
             return;
         }
 
-        node.rects.push(bound);
+        node.rects.push(rect);
         if (node.rects.length > this.cellObjMax && node.level < this.cellDepthMax) {
             if (!node.nodes.length) {
                 this.split(node);
@@ -168,20 +168,20 @@ export class QuadGridFactory implements iQuadGridFactory {
         }
     }
 
-    objectsAll(bounds: iBound[], node: iQuadNode): iBound[] {
+    objectsAll(rectStore: iBound[], node: iQuadNode): iBound[] {
         if (node.nodes.length > 0) {
             node.nodes.forEach(n => {
-                this.objectsAll(bounds, n);
+                this.objectsAll(rectStore, n);
             })
         } else {
-            bounds.push(...node.rects);
+            rectStore.push(...node.rects);
         }
-        return bounds;
+        return rectStore;
     }
 
-    retrieve(node: iQuadNode, bound: iBound, objStore?: iBound[]): Set<iBound> {
+    retrieve(node: iQuadNode, bound: iBound, rectStore?: iBound[]): Set<iBound> {
         const indexes = this.getIndex(node, bound);
-        const store = objStore || [];
+        const store = rectStore || [];
         store.push(...node.rects);
 
         if (node.nodes.length) {
@@ -195,8 +195,8 @@ export class QuadGridFactory implements iQuadGridFactory {
             console.log("111")
         }
 
-        if (objStore) {
-            objStore.push(...store);
+        if (rectStore) {
+            rectStore.push(...store);
         } else {
             return new Set(store);
         }

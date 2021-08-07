@@ -78,6 +78,8 @@ function _random(min, max) {
         return [
             _random(0, width - max),
             _random(0, height - max),
+            // _random(min, max),
+            // _random(min, max),
             _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 10 : 1),
             _random(min, max) * (large || (amount >= 10 && ind > amount * 0.9) ? 10 : 1),
         ] as iBound

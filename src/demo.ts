@@ -1,7 +1,7 @@
 import {QuadGrid} from "./lib/quadgrid";
 import {iBound, iQuadNode} from "./lib/quadgrid.type";
 
-const width = 1200, height = 800;
+const width = 1200, height = 1000;
 const min = 2, max = 10;
 
 let maxDepth = 0, maxItems = 2;
@@ -73,23 +73,28 @@ function _random(min, max) {
 
 (window as any).addNodes = function (amount: number, large = false) {
     states.rects.push(...Array(amount).fill(null).map((ignore, ind) => {
+        // const w = _random(min, max) * (large ? 30 : 1);
+        // const h = _random(min, max) * (large ? 30 : 1);
+        const w = _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 30 : 1) / 2;
+        const h = _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 30 : 1) / 2;
         return [
-            _random(0, width - max),
-            _random(0, height - max),
-            // _random(min, max),
-            // _random(min, max),
-            _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 10 : 1),
-            _random(min, max) * (large || (amount >= 10 && ind > amount * 0.9) ? 10 : 1),
+            _random(w, width - w),
+            _random(h, height - h),
+            w,
+            h,
         ] as iBound
     }))
 
     const start = performance.now();
     for (let i = 0; i < states.rects.length; i++) {
         grid.insertAsGrid(grid.root, states.rects[i])
-        // factory.insertAsTree(factory.root, rects[i])
+        // grid.insertAsTree(grid.root, states.rects[i])
     }
     const startUi = performance.now();
     console.log(`add ${amount} duration`, startUi - start)
+    console.log(`allNodes`, grid.allNodes([], grid.root));
+    console.log(`times`, grid._times.length / 3, grid._times);
+    console.log(`timesCovered`, grid._timesCovered.length / 3, grid._timesCovered);
 }
 
 
@@ -112,6 +117,7 @@ function _updateUI() {
     // draw grid
     _drawGridNodes(grid.root);
     _drawGridTaken(grid.root);
+    _drawGridTakenStroke(grid.root);
 
     // draw objects
     states.rects.forEach(rects => {
@@ -134,7 +140,7 @@ function _drawGridNodes(node: iQuadNode) {
         if (!node.taken) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
-            ctx.strokeRect(...node.bound)
+            ctx.strokeRect(..._getBound(node.bound))
         }
     }
 }
@@ -144,10 +150,25 @@ function _drawGridTaken(node: iQuadNode) {
         node.nodes.forEach(node => _drawGridTaken(node));
     } else {
         if (node.taken) {
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";
             ctx.fillStyle = "rgba(255,255,255, 0.8)";
             // @ts-ignore
-            ctx.fillRect(...node.bound)
+            ctx.fillRect(..._getBound(node.bound))
         }
     }
+}
+
+function _drawGridTakenStroke(node: iQuadNode) {
+    if (node.nodes.length) {
+        node.nodes.forEach(node => _drawGridTakenStroke(node));
+    } else {
+        if (node.taken) {
+            ctx.strokeStyle = "rgba(6, 6, 6, 0.8)";
+            // @ts-ignore
+            ctx.strokeRect(..._getBound(node.bound))
+        }
+    }
+}
+
+function _getBound(bound: iBound) {
+    return [bound[0] - bound[2], bound[1] - bound[3], bound[2] * 2, bound[3] * 2];
 }

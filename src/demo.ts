@@ -12,13 +12,14 @@ while (boundSize > min) {
 }
 
 const grid = new QuadGrid(width, height, maxDepth, maxItems);
-const focus = [0, 0, 50, 50];
+const focus = [0, 0, 20, 20];
 
 /*
 * states
 * */
 const states = {
     activeRects: new Set() as Set<iBound>,
+    activeNodes: [],
     rects: [] as iBound[],
 }
 
@@ -42,8 +43,8 @@ canvas.addEventListener("mousemove", function (e: any) {
         e.offsetX = e.layerX - e.target.offsetLeft;
         e.offsetY = e.layerY - e.target.offsetTop;
     }
-    focus[0] = e.offsetX - (focus[2] / 2);
-    focus[1] = e.offsetY - (focus[3] / 2);
+    focus[0] = e.offsetX;
+    focus[1] = e.offsetY;
 });
 canvas.addEventListener("mouseout", function (e) {
     mouseOn = false;
@@ -72,18 +73,33 @@ function _random(min, max) {
 }
 
 (window as any).addNodes = function (amount: number, large = false) {
-    states.rects.push(...Array(amount).fill(null).map((ignore, ind) => {
-        // const w = _random(min, max) * (large ? 30 : 1) / 2;
-        // const h = _random(min, max) * (large ? 30 : 1) / 2;
-        const w = _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 30 : 1) / 2;
-        const h = _random(min, max) * (large || (amount >= 10 && ind < amount * 0.1) ? 30 : 1) / 2;
-        return [
-            _random(w, width - w),
-            _random(h, height - h),
-            w,
-            h,
-        ] as iBound
-    }))
+    const arrSize = Math.ceil(Math.sqrt(amount));
+    const arr = Array(arrSize).fill(null);
+    arr.forEach((ignore, r) => {
+        arr.forEach((ignore, c) => {
+            // // const w = _random(min, max) * (large ? 30 : 1) / 2;
+            // // const h = _random(min, max) * (large ? 30 : 1) / 2;
+            // const w = _random(min, max) * (large || (amount >= 10 && r < amount * 0.1) ? 30 : 1) / 2;
+            // const h = _random(min, max) * (large || (amount >= 10 && c < amount * 0.1) ? 30 : 1) / 2;
+            // states.rects.push( [
+            //     _random(w, width - w),
+            //     _random(h, height - h),
+            //     w,
+            //     h,
+            // ] as iBound)
+
+
+            const w  =min * (large || (amount >= 10 && r < amount * 0.1) ? 30 : 1) / 2;
+            const h = min * (large || (amount >= 10 && c < amount * 0.1) ? 30 : 1) / 2;
+            states.rects.push( [
+                w * 3 * r * 1.1 + w,
+                h * 3 * c * 1.1 + h,
+                w,
+                h,
+            ] as iBound)
+        })
+
+    })
 
     const start = performance.now();
     for (let i = 0; i < states.rects.length; i++) {
@@ -111,7 +127,7 @@ function _updateUI() {
     if (mouseOn) {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         // @ts-ignore
-        ctx.fillRect(...focus);
+        ctx.fillRect(..._getBound(focus));
     }
 
     // draw grid

@@ -26,37 +26,38 @@ export class QuadGrid implements iQuadGrid {
             subWidth = node.bound[2] / 2,
             subHeight = node.bound[3] / 2;
 
-        //lt
-        node.nodes[0] = QuadNode([
-            x - subWidth,
-            y - subHeight,
-            subWidth,
-            subHeight
-        ], nextLevel);
+        node.nodes.push(
+            //lt
+            QuadNode([
+                x - subWidth,
+                y - subHeight,
+                subWidth,
+                subHeight
+            ], nextLevel),
 
-        //rt
-        node.nodes[1] = QuadNode([
-            x + subWidth,
-            y - subHeight,
-            subWidth,
-            subHeight
-        ], nextLevel);
+            //rt
+            QuadNode([
+                x + subWidth,
+                y - subHeight,
+                subWidth,
+                subHeight
+            ], nextLevel),
 
-        //rb
-        node.nodes[2] = QuadNode([
-            x + subWidth,
-            y + subHeight,
-            subWidth,
-            subHeight
-        ], nextLevel);
+            //rb
+            QuadNode([
+                x + subWidth,
+                y + subHeight,
+                subWidth,
+                subHeight
+            ], nextLevel),
 
-        //lb
-        node.nodes[3] = QuadNode([
-            x - subWidth,
-            y + subHeight,
-            subWidth,
-            subHeight
-        ], nextLevel);
+            //lb
+            QuadNode([
+                x - subWidth,
+                y + subHeight,
+                subWidth,
+                subHeight
+            ], nextLevel),)
     }
 
     getIndex(node: iQuadNode, rect: iBound) {

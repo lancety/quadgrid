@@ -1,5 +1,6 @@
 import {QuadGrid} from "./lib/quadgrid";
 import {iBound} from "./lib/quadgrid.type";
+import {makeRects} from "./demoUtil";
 
 const width = 1200, height = 1000;
 const min = 2, max = 10;
@@ -11,14 +12,13 @@ while (boundSize > min) {
     maxDepth++;
 }
 
-(window as any).QuadGrid = QuadGrid;
-(window as any).grid = new QuadGrid(width, height, maxDepth);
+const grid = new QuadGrid(width, height, maxDepth);
 
 /*
 * states
 * */
 const states = {
-    rects: [] as iBound[],
+    rects: [] as iBound[]
 }
 
 /*
@@ -43,54 +43,21 @@ const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 (function render() {
     _updateUI();
     window.requestAnimationFrame(render);
-})()
+})();
 
 
 /*
 * quadtree util
 * */
-function _random(min, max) {
-    return Math.round(min + (Math.random() * (max - min)));
+
+(window as any).addNodes = function(amount: number, large = false) {
+    const rects = states.rects = makeRects(width, height, min, max, amount, large)
+    grid.reset();
+    const duration = grid.insertBatch(rects)
+    console.log(`add ${amount} duration`, duration)
+    console.log(`allNodes`, grid.nodeAnchor);
 }
 
-(window as any).addNodes = function (amount: number, large = false) {
-    states.rects.splice(0);
-    (window as any).grid.reset();
-    const arrSize = Math.ceil(Math.sqrt(amount));
-    const arr = Array(arrSize).fill(null);
-    arr.forEach((ignore, r) => {
-        arr.forEach((ignore, c) => {
-            // const w = _random(min, max) * (large ? 30 : 1) / 2;
-            // const h = _random(min, max) * (large ? 30 : 1) / 2;
-            const w = _random(min, max) * (large || (amount >= 10 && r < arrSize * 0.1) ? 20 : 1) / 2;
-            const h = _random(min, max) * (large || (amount >= 10 && c < arrSize * 0.1) ? 20 : 1) / 2;
-            states.rects.push([
-                _random(w, width - w),
-                _random(h, height - h),
-                w,
-                h,
-            ] as iBound)
-
-            // const w  =min * (large || (amount >= 10 && r < amount * 0.1) ? 30 : 1) / 2;
-            // const h = min * (large || (amount >= 10 && c < amount * 0.1) ? 30 : 1) / 2;
-            // states.rects.push( [
-            //     w * 3 * r * 1.1 + w,
-            //     h * 3 * c * 1.1 + h,
-            //     w,
-            //     h,
-            // ] as iBound)
-        })
-
-    })
-
-    const start = performance.now();
-    for (let i = 0; i < states.rects.length; i++) {
-        (window as any).grid.insert(0, states.rects[i])
-    }
-    const startUi = performance.now();
-    console.log(`add ${amount} duration`, startUi - start, startUi, start)
-    console.log(`allNodes`, (window as any).grid.nodeAnchor);
-}
 
 
 /*
@@ -110,12 +77,12 @@ function _updateUI() {
 function _drawGridNodes(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if ((window as any).grid.nodesRef[boundOffset]) {
+    if (grid.nodesRef[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridNodes((window as any).grid.nodesRef[boundOffset + i])
+            _drawGridNodes(grid.nodesRef[boundOffset + i])
         }
     } else {
-        if (!(window as any).grid.nodesTaken[nodeIndex]) {
+        if (!grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))
@@ -126,12 +93,12 @@ function _drawGridNodes(nodeIndex?: number) {
 function _drawGridTaken(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if ((window as any).grid.nodesRef[boundOffset]) {
+    if (grid.nodesRef[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridTaken((window as any).grid.nodesRef[boundOffset + i])
+            _drawGridTaken(grid.nodesRef[boundOffset + i])
         }
     } else {
-        if ((window as any).grid.nodesTaken[nodeIndex]) {
+        if (grid.nodesTaken[nodeIndex]) {
             ctx.fillStyle = "rgba(6, 6, 6, 0.8)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))
@@ -142,12 +109,12 @@ function _drawGridTaken(nodeIndex?: number) {
 function _drawGridTakenStroke(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if ((window as any).grid.nodesRef[boundOffset]) {
+    if (grid.nodesRef[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridTakenStroke((window as any).grid.nodesRef[boundOffset + i])
+            _drawGridTakenStroke(grid.nodesRef[boundOffset + i])
         }
     } else {
-        if ((window as any).grid.nodesTaken[nodeIndex]) {
+        if (grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(152,11,11,0.8)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))
@@ -156,7 +123,7 @@ function _drawGridTakenStroke(nodeIndex?: number) {
 }
 
 function _getBound(nodeIndex) {
-    const {nodeX, nodeY, nodeW, nodeH} = (window as any).grid;
+    const {nodeX, nodeY, nodeW, nodeH} = grid;
     const x = nodeX[nodeIndex];
     const y = nodeY[nodeIndex];
     const w = nodeW[nodeIndex];

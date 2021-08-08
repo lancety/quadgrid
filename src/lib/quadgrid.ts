@@ -114,7 +114,7 @@ export class QuadGrid implements iQuadGrid {
         return diffW <= 0 && diffH <= 0 && diffX - diffW >= 0 && diffY - diffH >= 0 && diffX + diffW <= 0 && diffY + diffH <= 0;
     }
 
-    insertBatch(nodeIndex: number, boundOffset: number, rect: iBound, method: string) {
+    insertToChildren(nodeIndex: number, boundOffset: number, rect: iBound, method: string) {
         const binaryIndexes = this.getIndex(nodeIndex, rect);
         binaryIndexes & 0b1 && this[method](this.nodesRef[boundOffset], rect);
         binaryIndexes & 0b10 && this[method](this.nodesRef[boundOffset + 1], rect);
@@ -137,7 +137,7 @@ export class QuadGrid implements iQuadGrid {
             }
 
             if (this.nodesRef[boundOffset]) {
-                this.insertBatch(nodeIndex, boundOffset, rect, "insert");
+                this.insertToChildren(nodeIndex, boundOffset, rect, "insert");
             }
 
             if (this.nodesRef[boundOffset] === 0) {
@@ -146,6 +146,15 @@ export class QuadGrid implements iQuadGrid {
                 this.nodesTaken[nodeIndex] = 0;
             }
         }
+    }
+
+    insertBatch(rects: iBound[]) {
+        const start = typeof performance === "undefined" ? Date.now() : performance.now();
+        rects.forEach(rect => {
+            this.insert(0, rect);
+        })
+        const startUi = typeof performance === "undefined" ? Date.now() : performance.now();
+        return startUi - start;
     }
 
     dispose() {

@@ -1,18 +1,10 @@
 import {epNodeInfo, iBound, iQuadGrid, iQuadNode} from "./quadgrid.type";
 
-export function QuadNode(bound: iBound, level: number): iQuadNode {
-    return {
-        bound,
-        level,
-        nodes: [],
-    }
-}
-
 export class QuadGrid implements iQuadGrid {
     cellMinSize: number;
     cellBatchSize = 100000;
 
-    nodeBounds: Int16Array;
+    nodeBounds: Float32Array;
     nodesInfo: Int8Array;
     nodesInfoSize = Object.keys(epNodeInfo).length;  // [level, covered, taken]
     nodesRef: Int32Array;
@@ -23,7 +15,7 @@ export class QuadGrid implements iQuadGrid {
                 public cellDepthMax = 6) {
         this.cellMinSize = Math.min(width, height) / Math.pow(2, cellDepthMax);
 
-        this.nodeBounds = new Int16Array(this.cellBatchSize * 4);
+        this.nodeBounds = new Float32Array(this.cellBatchSize * 4);
         this.nodesRef = new Int32Array(this.cellBatchSize * 4);
         this.nodesInfo = new Int8Array(this.cellBatchSize * this.nodesInfoSize);
 
@@ -31,7 +23,11 @@ export class QuadGrid implements iQuadGrid {
     }
 
     newNode(mx: number, my: number, hw: number, hh: number, level: number) {
-        this.nodeBounds.set([mx, my, hw, hh], this.nodeAnchor * 4);
+        const offset = this.nodeAnchor * 4;
+        this.nodeBounds[offset] = mx;
+        this.nodeBounds[offset+1] = my;
+        this.nodeBounds[offset+2] = hw;
+        this.nodeBounds[offset+3] = hh;
         this.nodesInfo[this.nodeAnchor * 3] = level;
         const nodeIndex = this.nodeAnchor;
         this.nodeAnchor++;
@@ -99,9 +95,11 @@ export class QuadGrid implements iQuadGrid {
      * @returns {boolean}
      */
     inside(offset: number, rect: iBound) {
-        return this.nodeBounds[offset] - this.nodeBounds[offset + 2] > rect[0] - rect[2] && this.nodeBounds[offset + 1] - this.nodeBounds[offset + 3] > rect[1] - rect[3] &&
-            this.nodeBounds[offset] + this.nodeBounds[offset + 2] < rect[0] + rect[2] &&
-            this.nodeBounds[offset + 1] + this.nodeBounds[offset + 3] < rect[1] + rect[3];
+        const diffX = this.nodeBounds[offset] - rect[0];
+        const diffY = this.nodeBounds[offset + 1] - rect[1];
+        const diffW = this.nodeBounds[offset + 2] - rect[2];
+        const diffH = this.nodeBounds[offset + 3] - rect[3];
+        return diffW <= 0 && diffH <= 0 && diffX - diffW >= 0 && diffY - diffH >= 0 && diffX + diffW <= 0 && diffY + diffH <= 0;
     }
 
     insertBatch(boundOffset: number, rect: iBound, method: string) {
@@ -137,16 +135,5 @@ export class QuadGrid implements iQuadGrid {
                 this.nodesInfo[infoOffset + epNodeInfo.taken] = 0;
             }
         }
-    }
-
-    allNodes(nodeStore: iQuadNode[], node: iQuadNode): iQuadNode[] {
-        if (node.nodes.length > 0) {
-            node.nodes.forEach(n => {
-                this.allNodes(nodeStore, n);
-            })
-        } else {
-            nodeStore.push(node);
-        }
-        return nodeStore;
     }
 }

@@ -2,7 +2,7 @@ import {QuadGrid} from "./lib/quadgrid";
 import {epNodeInfo, iBound} from "./lib/quadgrid.type";
 
 const width = 1200, height = 1000;
-const min = 2, max = 10;
+const min = 2, max = 20;
 
 let maxDepth = 0;
 let boundSize = Math.min(width, height);
@@ -59,8 +59,8 @@ function _random(min, max) {
         arr.forEach((ignore, c) => {
             // const w = _random(min, max) * (large ? 30 : 1) / 2;
             // const h = _random(min, max) * (large ? 30 : 1) / 2;
-            const w = _random(min, max) * (large || (amount >= 10 && r < arrSize * 0.2) ? 20 : 1) / 2;
-            const h = _random(min, max) * (large || (amount >= 10 && c < arrSize * 0.2) ? 20 : 1) / 2;
+            const w = _random(min, max) * (large || (amount >= 10 && r < arrSize * 0.1) ? 20 : 1) / 2;
+            const h = _random(min, max) * (large || (amount >= 10 && c < arrSize * 0.1) ? 20 : 1) / 2;
             states.rects.push([
                 _random(w, width - w),
                 _random(h, height - h),

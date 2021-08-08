@@ -6,7 +6,7 @@ function _random(min, max) {
     return Math.round(min + (Math.random() * (max - min)));
 }
 
-const width = 1200, height = 1000;
+const width = 1600, height = 1200;
 const min = 2, max = 10;
 
 

@@ -9,10 +9,10 @@ export const makeRects = function (width, height, min, max, amount: number, larg
 
 
     for (let i =0 ;i<amount; i++) {
-        const w = _random(min, max) * (large ? 30 : 1) / 2;
-        const h = _random(min, max) * (large ? 30 : 1) / 2;
-        // const w = _random(min, max) * (large || (amount >= 10 && i < amount * 0.1) ? 20 : 1) / 2;
-        // const h = _random(min, max) * (large || (amount >= 10 && i < amount * 0.1) ? 20 : 1) / 2;
+        // const w = _random(min, max) * (large ? 30 : 1) / 2;
+        // const h = _random(min, max) * (large ? 30 : 1) / 2;
+        const w = _random(min, max) * (large || (amount >= 10 && i < amount * 0.1) ? 20 : 1) / 2;
+        const h = _random(min, max) * (large || (amount >= 10 && i < amount * 0.1) ? 20 : 1) / 2;
         rects.push([
             _random(w, width - w),
             _random(h, height - h),

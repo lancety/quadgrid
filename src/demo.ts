@@ -2,7 +2,7 @@ import {QuadGrid} from "./lib/quadgrid";
 import {iBound} from "./lib/quadgrid.type";
 import {makeRects} from "./demoUtil";
 
-const width = 1200, height = 1000;
+const width = 1600, height = 1200;
 const min = 2, max = 10;
 
 let maxDepth = 0;
@@ -12,7 +12,7 @@ while (boundSize > min) {
     maxDepth++;
 }
 
-const grid = new QuadGrid(width, height, maxDepth);
+const grid = (window as any).grid = new QuadGrid(width, height, maxDepth);
 
 /*
 * states

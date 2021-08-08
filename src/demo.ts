@@ -12,14 +12,11 @@ while (boundSize > min) {
 }
 
 const grid = new QuadGrid(width, height, maxDepth, maxItems);
-const focus = [0, 0, 20, 20];
 
 /*
 * states
 * */
 const states = {
-    activeRects: new Set() as Set<iBound>,
-    activeNodes: [],
     rects: [] as iBound[],
 }
 
@@ -36,19 +33,6 @@ const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 /*
 * mouse event
 * */
-let mouseOn = false;
-canvas.addEventListener("mousemove", function (e: any) {
-    mouseOn = true;
-    if (!e.offsetX) {
-        e.offsetX = e.layerX - e.target.offsetLeft;
-        e.offsetY = e.layerY - e.target.offsetTop;
-    }
-    focus[0] = e.offsetX;
-    focus[1] = e.offsetY;
-});
-canvas.addEventListener("mouseout", function (e) {
-    mouseOn = false;
-});
 
 
 /*
@@ -56,10 +40,6 @@ canvas.addEventListener("mouseout", function (e) {
 * */
 
 (function render() {
-    if (mouseOn) {
-        states.activeRects.clear();
-        states.activeRects = grid.retrieve(grid.root, focus);
-    }
     _updateUI();
     window.requestAnimationFrame(render);
 })()
@@ -77,40 +57,37 @@ function _random(min, max) {
     const arr = Array(arrSize).fill(null);
     arr.forEach((ignore, r) => {
         arr.forEach((ignore, c) => {
-            // // const w = _random(min, max) * (large ? 30 : 1) / 2;
-            // // const h = _random(min, max) * (large ? 30 : 1) / 2;
-            // const w = _random(min, max) * (large || (amount >= 10 && r < amount * 0.1) ? 30 : 1) / 2;
-            // const h = _random(min, max) * (large || (amount >= 10 && c < amount * 0.1) ? 30 : 1) / 2;
-            // states.rects.push( [
-            //     _random(w, width - w),
-            //     _random(h, height - h),
-            //     w,
-            //     h,
-            // ] as iBound)
-
-
-            const w  =min * (large || (amount >= 10 && r < amount * 0.1) ? 30 : 1) / 2;
-            const h = min * (large || (amount >= 10 && c < amount * 0.1) ? 30 : 1) / 2;
+            // const w = _random(min, max) * (large ? 30 : 1) / 2;
+            // const h = _random(min, max) * (large ? 30 : 1) / 2;
+            const w = _random(min, max) * (large || (amount >= 10 && r < arrSize * 0.2) ? 20 : 1) / 2;
+            const h = _random(min, max) * (large || (amount >= 10 && c < arrSize * 0.2) ? 20 : 1) / 2;
             states.rects.push( [
-                w * 3 * r * 1.1 + w,
-                h * 3 * c * 1.1 + h,
+                _random(w, width - w),
+                _random(h, height - h),
                 w,
                 h,
             ] as iBound)
+
+
+            // const w  =min * (large || (amount >= 10 && r < amount * 0.1) ? 30 : 1) / 2;
+            // const h = min * (large || (amount >= 10 && c < amount * 0.1) ? 30 : 1) / 2;
+            // states.rects.push( [
+            //     w * 3 * r * 1.1 + w,
+            //     h * 3 * c * 1.1 + h,
+            //     w,
+            //     h,
+            // ] as iBound)
         })
 
     })
 
     const start = performance.now();
     for (let i = 0; i < states.rects.length; i++) {
-        grid.insertAsGrid(grid.root, states.rects[i])
-        // grid.insertAsTree(grid.root, states.rects[i])
+        grid.insert(grid.root, states.rects[i])
     }
     const startUi = performance.now();
     console.log(`add ${amount} duration`, startUi - start)
     console.log(`allNodes`, grid.allNodes([], grid.root));
-    console.log(`times`, grid._times.length / 3, grid._times);
-    console.log(`timesCovered`, grid._timesCovered.length / 3, grid._timesCovered);
 }
 
 
@@ -121,32 +98,11 @@ function _updateUI() {
     ctx.clearRect(0, 0, width, height);
 
     document.getElementById("info_count").innerText = states.rects.length + "";
-    document.getElementById("info_involved").innerText = (states.activeRects?.size || 0) + "";
-
-    // draw focus rect
-    if (mouseOn) {
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        // @ts-ignore
-        ctx.fillRect(..._getBound(focus));
-    }
 
     // draw grid
     _drawGridNodes(grid.root);
     _drawGridTaken(grid.root);
     _drawGridTakenStroke(grid.root);
-
-    // draw objects
-    states.rects.forEach(rects => {
-        if (states.activeRects.has(rects)) {
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-            // @ts-ignore
-            ctx.fillRect(..._getBound(rects));
-        } else {
-            ctx.strokeStyle = 'rgba(255, 0, 0, 1)';
-            // @ts-ignore
-            ctx.strokeRect(..._getBound(rects))
-        }
-    })
 }
 
 function _drawGridNodes(node: iQuadNode) {
@@ -166,7 +122,7 @@ function _drawGridTaken(node: iQuadNode) {
         node.nodes.forEach(node => _drawGridTaken(node));
     } else {
         if (node.taken) {
-            ctx.fillStyle = "rgba(255,255,255, 0.8)";
+            ctx.fillStyle = "rgba(6, 6, 6, 0.8)";
             // @ts-ignore
             ctx.fillRect(..._getBound(node.bound))
         }
@@ -178,7 +134,7 @@ function _drawGridTakenStroke(node: iQuadNode) {
         node.nodes.forEach(node => _drawGridTakenStroke(node));
     } else {
         if (node.taken) {
-            ctx.strokeStyle = "rgba(6, 6, 6, 0.8)";
+            ctx.strokeStyle = "rgba(152,11,11,0.8)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(node.bound))
         }

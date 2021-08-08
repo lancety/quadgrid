@@ -5,7 +5,6 @@ export function QuadNode(bound: iBound, level: number): iQuadNode {
         bound,
         level,
         nodes: [],
-        rects: [],
     }
 }
 
@@ -94,7 +93,6 @@ export class QuadGrid implements iQuadGrid {
     }
 
     merge(node: iQuadNode) {
-        node.rects.push(...this.allRects([], node));
         node.nodes.splice(0);
     }
 
@@ -112,10 +110,7 @@ export class QuadGrid implements iQuadGrid {
         binaryIndexes & 0b1000 && this[method](node.nodes[3], rect);
     }
 
-    _times = [];
-    _timesCovered = [];
-
-    insertAsGrid(node: iQuadNode, rect: iBound) {
+    insert(node: iQuadNode, rect: iBound) {
         const newCoverTest = this.inside(node.bound, rect);
         if (newCoverTest === true) {
             if (node.covered !== true) {
@@ -123,51 +118,20 @@ export class QuadGrid implements iQuadGrid {
                 node.taken = true;
                 node.covered = true;
             }
-            node.rects.push(rect);
-            this._timesCovered.push(performance.now(), node.bound, node.level);
         } else {
-            node.rects.push(rect);
-            if (node.nodes.length) {
-                this.insertBatch(node, rect, "insertAsGrid");
-                node.rects.splice(0);
-            } else if (node.covered !== true) {
-                if (node.level < this.cellDepthMax) {
-                    this.split(node);
-                    node.rects.forEach(rect => {
-                        this.insertBatch(node, rect, "insertAsGrid");
-                    })
-
-                    node.rects.splice(0);
-                }
+            if (node.level < this.cellDepthMax && !node.covered && !node.nodes.length) {
+                this.split(node);
             }
 
-            if (node.nodes.length === 0 && node.rects.length > 0) {
+            if (node.nodes.length) {
+                this.insertBatch(node, rect, "insert");
+            }
+
+            if (node.nodes.length === 0) {
                 node.taken = true;
             } else {
                 delete node.taken;
             }
-            this._times.push(performance.now(), node.bound, node.level);
-        }
-    }
-
-    insertAsTree(node: iQuadNode, rect: iBound) {
-
-        if (node.nodes.length) {
-            this.insertBatch(node, rect, "insertAsTree");
-            return;
-        }
-
-        node.rects.push(rect);
-        if (node.rects.length > this.cellItemsMax && node.level < this.cellDepthMax) {
-            if (!node.nodes.length) {
-                this.split(node);
-            }
-
-            node.rects.forEach(rect =>
-                this.insertBatch(node, rect, "insertAsTree")
-            )
-
-            node.rects.splice(0);
         }
     }
 
@@ -180,41 +144,5 @@ export class QuadGrid implements iQuadGrid {
             nodeStore.push(node);
         }
         return nodeStore;
-    }
-
-    allRects(rectStore: iBound[], node: iQuadNode): iBound[] {
-        if (node.nodes.length > 0) {
-            node.nodes.forEach(n => {
-                this.allRects(rectStore, n);
-            })
-        } else {
-            rectStore.push(...node.rects);
-        }
-        return rectStore;
-    }
-
-    retrieve(node: iQuadNode, bound: iBound, rectStore?: iBound[]): Set<iBound> {
-        const indexes = this.getIndex(node, bound);
-        const store = rectStore || [];
-
-        if (node.nodes.length) {
-            indexes & 0b1 && this.retrieve(node.nodes[0], bound, store);
-            indexes & 0b10 && this.retrieve(node.nodes[1], bound, store);
-            indexes & 0b100 && this.retrieve(node.nodes[2], bound, store);
-            indexes & 0b1000 && this.retrieve(node.nodes[3], bound, store);
-        }
-
-        if (rectStore) {
-            node.nodes.length === 0 && rectStore.push(...node.rects);
-        } else {
-            return new Set(store);
-        }
-    }
-
-    clear() {
-        this.root.nodes.splice(0);
-        this.root.rects.splice(0);
-        delete this.root.taken;
-        delete this.root.covered;
     }
 }

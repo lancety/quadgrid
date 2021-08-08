@@ -1,7 +1,7 @@
 {
   "name": "quadgrid",
   "version": "1.0.0",
-  "description": "Store and retrieve rect bounds in quadtree structure; Generate quadgrid based on given rect bounds; ",
+  "description": "Generate quadgrid based on given rect bounds;",
   "main": "index.js",
   "dependencies": {
     "http-server": "^0.12.3",
@@ -23,7 +23,13 @@
     "quadtree",
     "quadgrid",
     "js",
-    "ts"
+    "ts",
+    "game",
+    "pathfinding",
+    "grid",
+    "navgrid",
+    "generator",
+    "2d grid"
   ],
   "author": "lancety",
   "license": "MIT",

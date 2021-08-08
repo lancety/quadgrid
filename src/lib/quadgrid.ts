@@ -1,13 +1,15 @@
-import {epNodeInfo, iBound, iQuadGrid, iQuadNode} from "./quadgrid.type";
+import {iBound, iQuadGrid} from "./quadgrid.type";
 
 export class QuadGrid implements iQuadGrid {
     cellMinSize: number;
     cellBatchSize = 100000;
 
     nodeBounds: Float32Array;
-    nodesInfo: Int8Array;
-    nodesInfoSize = Object.keys(epNodeInfo).length;  // [level, covered, taken]
     nodesRef: Int32Array;
+
+    nodesLevel: Int8Array;
+    nodesCovered: Int8Array;
+    nodesTaken: Int8Array;
 
     nodeAnchor = 0;
 
@@ -17,7 +19,9 @@ export class QuadGrid implements iQuadGrid {
 
         this.nodeBounds = new Float32Array(this.cellBatchSize * 4);
         this.nodesRef = new Int32Array(this.cellBatchSize * 4);
-        this.nodesInfo = new Int8Array(this.cellBatchSize * this.nodesInfoSize);
+        this.nodesLevel = new Int8Array(this.cellBatchSize);
+        this.nodesCovered = new Int8Array(this.cellBatchSize);
+        this.nodesTaken = new Int8Array(this.cellBatchSize);
 
         this.newNode(width / 2, height / 2, width / 2, height / 2, 0);
     }
@@ -28,7 +32,7 @@ export class QuadGrid implements iQuadGrid {
         this.nodeBounds[offset+1] = my;
         this.nodeBounds[offset+2] = hw;
         this.nodeBounds[offset+3] = hh;
-        this.nodesInfo[this.nodeAnchor * 3] = level;
+        this.nodesLevel[this.nodeAnchor] = level;
         const nodeIndex = this.nodeAnchor;
         this.nodeAnchor++;
         return nodeIndex;
@@ -37,7 +41,7 @@ export class QuadGrid implements iQuadGrid {
 
     split(nodeIndex: number) {
         const boundOffset = nodeIndex * 4;
-        const nextLevel = this.nodesInfo[nodeIndex * this.nodesInfoSize + epNodeInfo.level] + 1,
+        const nextLevel = this.nodesLevel[nodeIndex] + 1,
             x = this.nodeBounds[boundOffset],
             y = this.nodeBounds[boundOffset + 1],
             subWidth = this.nodeBounds[boundOffset + 2] / 2,
@@ -112,16 +116,15 @@ export class QuadGrid implements iQuadGrid {
 
     insert(nodeIndex: number, rect: iBound) {
         const boundOffset = nodeIndex * 4;
-        const infoOffset = nodeIndex * this.nodesInfoSize;
         const newCoverTest = this.inside(boundOffset, rect);
         if (newCoverTest === true) {
-            if (this.nodesInfo[infoOffset + epNodeInfo.covered] !== 1) {
+            if (this.nodesCovered[nodeIndex] !== 1) {
                 this.merge(boundOffset);
-                this.nodesInfo[infoOffset + epNodeInfo.taken] = 1;
-                this.nodesInfo[infoOffset + epNodeInfo.covered] = 1;
+                this.nodesTaken[nodeIndex] = 1;
+                this.nodesCovered[nodeIndex] = 1;
             }
         } else {
-            if (this.nodesInfo[infoOffset + epNodeInfo.level] < this.cellDepthMax && !this.nodesInfo[infoOffset + epNodeInfo.covered] && !this.nodesRef[boundOffset]) {
+            if (this.nodesLevel[nodeIndex] < this.cellDepthMax && !this.nodesCovered[nodeIndex] && !this.nodesRef[boundOffset]) {
                 this.split(nodeIndex);
             }
 
@@ -130,10 +133,11 @@ export class QuadGrid implements iQuadGrid {
             }
 
             if (this.nodesRef[boundOffset] === 0) {
-                this.nodesInfo[infoOffset + epNodeInfo.taken] = 1;
+                this.nodesTaken[nodeIndex] = 1;
             } else {
-                this.nodesInfo[infoOffset + epNodeInfo.taken] = 0;
+                this.nodesTaken[nodeIndex] = 0;
             }
         }
     }
+
 }

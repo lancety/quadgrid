@@ -1,8 +1,8 @@
 import {QuadGrid} from "./lib/quadgrid";
-import {epNodeInfo, iBound} from "./lib/quadgrid.type";
+import {iBound} from "./lib/quadgrid.type";
 
 const width = 1200, height = 1000;
-const min = 2, max = 20;
+const min = 2, max = 10;
 
 let maxDepth = 0;
 let boundSize = Math.min(width, height);
@@ -113,8 +113,7 @@ function _drawGridNodes(nodeIndex?: number) {
             _drawGridNodes(grid.nodesRef[boundOffset + i])
         }
     } else {
-        const infoOffset = nodeIndex * grid.nodesInfoSize;
-        if (!grid.nodesInfo[infoOffset + epNodeInfo.taken]) {
+        if (!grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(grid.nodeBounds.subarray(boundOffset, boundOffset + 4)))
@@ -130,8 +129,7 @@ function _drawGridTaken(nodeIndex?: number) {
             _drawGridTaken(grid.nodesRef[boundOffset + i])
         }
     } else {
-        const infoOffset = nodeIndex * grid.nodesInfoSize;
-        if (grid.nodesInfo[infoOffset + epNodeInfo.taken]) {
+        if (grid.nodesTaken[nodeIndex]) {
             ctx.fillStyle = "rgba(6, 6, 6, 0.8)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(grid.nodeBounds.subarray(boundOffset, boundOffset + 4)))
@@ -147,8 +145,7 @@ function _drawGridTakenStroke(nodeIndex?: number) {
             _drawGridTakenStroke(grid.nodesRef[boundOffset + i])
         }
     } else {
-        const infoOffset = nodeIndex * grid.nodesInfoSize;
-        if (grid.nodesInfo[infoOffset + epNodeInfo.taken]) {
+        if (grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(152,11,11,0.8)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(grid.nodeBounds.subarray(boundOffset, boundOffset + 4)))

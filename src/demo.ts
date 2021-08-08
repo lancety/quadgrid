@@ -116,7 +116,7 @@ function _drawGridNodes(nodeIndex?: number) {
         if (!grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
-            ctx.strokeRect(..._getBound(grid.nodeBounds.subarray(boundOffset, boundOffset + 4)))
+            ctx.strokeRect(..._getBound(nodeIndex))
         }
     }
 }
@@ -132,7 +132,7 @@ function _drawGridTaken(nodeIndex?: number) {
         if (grid.nodesTaken[nodeIndex]) {
             ctx.fillStyle = "rgba(6, 6, 6, 0.8)";
             // @ts-ignore
-            ctx.strokeRect(..._getBound(grid.nodeBounds.subarray(boundOffset, boundOffset + 4)))
+            ctx.strokeRect(..._getBound(nodeIndex))
         }
     }
 }
@@ -148,11 +148,16 @@ function _drawGridTakenStroke(nodeIndex?: number) {
         if (grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(152,11,11,0.8)";
             // @ts-ignore
-            ctx.strokeRect(..._getBound(grid.nodeBounds.subarray(boundOffset, boundOffset + 4)))
+            ctx.strokeRect(..._getBound(nodeIndex))
         }
     }
 }
 
-function _getBound(bound: iBound) {
-    return [bound[0] - bound[2], bound[1] - bound[3], bound[2] * 2, bound[3] * 2];
+function _getBound(nodeIndex) {
+    const {nodeX, nodeY, nodeW, nodeH} = grid;
+    const x = nodeX[nodeIndex];
+    const y = nodeY[nodeIndex];
+    const w = nodeW[nodeIndex];
+    const h = nodeH[nodeIndex];
+    return [x - w, y - h, w * 2, h * 2];
 }

@@ -4,7 +4,10 @@ export class QuadGrid implements iQuadGrid {
     cellMinSize: number;
     cellBatchSize = 100000;
 
-    nodeBounds: Float32Array;
+    nodeX: Float32Array;
+    nodeY: Float32Array;
+    nodeW: Float32Array;
+    nodeH: Float32Array;
     nodesRef: Int32Array;
 
     nodesLevel: Int8Array;
@@ -17,7 +20,10 @@ export class QuadGrid implements iQuadGrid {
                 public cellDepthMax = 6) {
         this.cellMinSize = Math.min(width, height) / Math.pow(2, cellDepthMax);
 
-        this.nodeBounds = new Float32Array(this.cellBatchSize * 4);
+        this.nodeX = new Float32Array(this.cellBatchSize);
+        this.nodeY = new Float32Array(this.cellBatchSize);
+        this.nodeW = new Float32Array(this.cellBatchSize);
+        this.nodeH = new Float32Array(this.cellBatchSize);
         this.nodesRef = new Int32Array(this.cellBatchSize * 4);
         this.nodesLevel = new Int8Array(this.cellBatchSize);
         this.nodesCovered = new Int8Array(this.cellBatchSize);
@@ -27,11 +33,10 @@ export class QuadGrid implements iQuadGrid {
     }
 
     newNode(mx: number, my: number, hw: number, hh: number, level: number) {
-        const offset = this.nodeAnchor * 4;
-        this.nodeBounds[offset] = mx;
-        this.nodeBounds[offset+1] = my;
-        this.nodeBounds[offset+2] = hw;
-        this.nodeBounds[offset+3] = hh;
+        this.nodeX[this.nodeAnchor] = mx;
+        this.nodeY[this.nodeAnchor] = my;
+        this.nodeW[this.nodeAnchor] = hw;
+        this.nodeH[this.nodeAnchor] = hh;
         this.nodesLevel[this.nodeAnchor] = level;
         const nodeIndex = this.nodeAnchor;
         this.nodeAnchor++;
@@ -42,10 +47,10 @@ export class QuadGrid implements iQuadGrid {
     split(nodeIndex: number) {
         const boundOffset = nodeIndex * 4;
         const nextLevel = this.nodesLevel[nodeIndex] + 1,
-            x = this.nodeBounds[boundOffset],
-            y = this.nodeBounds[boundOffset + 1],
-            subWidth = this.nodeBounds[boundOffset + 2] / 2,
-            subHeight = this.nodeBounds[boundOffset + 3] / 2;
+            x = this.nodeX[nodeIndex],
+            y = this.nodeY[nodeIndex],
+            subWidth = this.nodeW[nodeIndex] / 2,
+            subHeight = this.nodeH[nodeIndex] / 2;
 
         this.nodesRef.set([
             this.newNode(x - subWidth, y - subHeight, subWidth, subHeight, nextLevel), //lt
@@ -55,10 +60,10 @@ export class QuadGrid implements iQuadGrid {
         ], boundOffset);
     }
 
-    getIndex(boundOffset: number, rect: iBound) {
+    getIndex(nodeIndex: number, rect: iBound) {
         let indexes = 0b0,
-            verticalMidpoint = this.nodeBounds[boundOffset],
-            horizontalMidpoint = this.nodeBounds[boundOffset + 1];
+            verticalMidpoint = this.nodeX[nodeIndex],
+            horizontalMidpoint = this.nodeY[nodeIndex];
 
         const startIsNorth = rect[1] - rect[3] < horizontalMidpoint,
             startIsWest = rect[0] - rect[2] < verticalMidpoint,
@@ -94,20 +99,20 @@ export class QuadGrid implements iQuadGrid {
 
     /**
      *
-     * @param {number} offset   nodeBounds index offset
+     * @param {number} nodeIndex
      * @param {iBound} rect
      * @returns {boolean}
      */
-    inside(offset: number, rect: iBound) {
-        const diffX = this.nodeBounds[offset] - rect[0];
-        const diffY = this.nodeBounds[offset + 1] - rect[1];
-        const diffW = this.nodeBounds[offset + 2] - rect[2];
-        const diffH = this.nodeBounds[offset + 3] - rect[3];
+    inside(nodeIndex: number, rect: iBound) {
+        const diffX = this.nodeX[nodeIndex] - rect[0];
+        const diffY = this.nodeY[nodeIndex] - rect[1];
+        const diffW = this.nodeW[nodeIndex] - rect[2];
+        const diffH = this.nodeH[nodeIndex] - rect[3];
         return diffW <= 0 && diffH <= 0 && diffX - diffW >= 0 && diffY - diffH >= 0 && diffX + diffW <= 0 && diffY + diffH <= 0;
     }
 
     insertBatch(boundOffset: number, rect: iBound, method: string) {
-        const binaryIndexes = this.getIndex(boundOffset, rect);
+        const binaryIndexes = this.getIndex(boundOffset / 4, rect);
         binaryIndexes & 0b1 && this[method](this.nodesRef[boundOffset], rect);
         binaryIndexes & 0b10 && this[method](this.nodesRef[boundOffset + 1], rect);
         binaryIndexes & 0b100 && this[method](this.nodesRef[boundOffset + 2], rect);
@@ -116,7 +121,7 @@ export class QuadGrid implements iQuadGrid {
 
     insert(nodeIndex: number, rect: iBound) {
         const boundOffset = nodeIndex * 4;
-        const newCoverTest = this.inside(boundOffset, rect);
+        const newCoverTest = this.inside(nodeIndex, rect);
         if (newCoverTest === true) {
             if (this.nodesCovered[nodeIndex] !== 1) {
                 this.merge(boundOffset);

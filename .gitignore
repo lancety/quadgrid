@@ -1,2 +1,6 @@
 .idea/
 node_modules/
+demo/demo.bundle.js
+demo/demo.bundle.js.map
+demo/demoNode.bundle.js
+demo/demoNode.bundle.js.map

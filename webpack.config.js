@@ -9,6 +9,7 @@ module.exports = {
 
     entry: {
         'demo': './demo.ts',
+        'demoNode': '/demoNode.ts',
         'lib': './lib.ts'
     },
 

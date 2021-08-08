@@ -24,12 +24,16 @@ export class QuadGrid implements iQuadGrid {
         this.nodeY = new Float32Array(this.cellBatchSize);
         this.nodeW = new Float32Array(this.cellBatchSize);
         this.nodeH = new Float32Array(this.cellBatchSize);
-        this.nodesRef = new Int32Array(this.cellBatchSize * 4);
         this.nodesLevel = new Int8Array(this.cellBatchSize);
         this.nodesCovered = new Int8Array(this.cellBatchSize);
         this.nodesTaken = new Int8Array(this.cellBatchSize);
+        this.nodesRef = new Int32Array(this.cellBatchSize * 4);
 
-        this.newNode(width / 2, height / 2, width / 2, height / 2, 0);
+        this.rootNode();
+    }
+
+    rootNode() {
+        this.newNode(this.width / 2, this.height / 2, this.width / 2, this.height / 2, 0);
     }
 
     newNode(mx: number, my: number, hw: number, hh: number, level: number) {
@@ -44,8 +48,7 @@ export class QuadGrid implements iQuadGrid {
     }
 
 
-    split(nodeIndex: number) {
-        const boundOffset = nodeIndex * 4;
+    split(nodeIndex: number, boundOffset: number) {
         const nextLevel = this.nodesLevel[nodeIndex] + 1,
             x = this.nodeX[nodeIndex],
             y = this.nodeY[nodeIndex],
@@ -111,8 +114,8 @@ export class QuadGrid implements iQuadGrid {
         return diffW <= 0 && diffH <= 0 && diffX - diffW >= 0 && diffY - diffH >= 0 && diffX + diffW <= 0 && diffY + diffH <= 0;
     }
 
-    insertBatch(boundOffset: number, rect: iBound, method: string) {
-        const binaryIndexes = this.getIndex(boundOffset / 4, rect);
+    insertBatch(nodeIndex: number, boundOffset: number, rect: iBound, method: string) {
+        const binaryIndexes = this.getIndex(nodeIndex, rect);
         binaryIndexes & 0b1 && this[method](this.nodesRef[boundOffset], rect);
         binaryIndexes & 0b10 && this[method](this.nodesRef[boundOffset + 1], rect);
         binaryIndexes & 0b100 && this[method](this.nodesRef[boundOffset + 2], rect);
@@ -130,11 +133,11 @@ export class QuadGrid implements iQuadGrid {
             }
         } else {
             if (this.nodesLevel[nodeIndex] < this.cellDepthMax && !this.nodesCovered[nodeIndex] && !this.nodesRef[boundOffset]) {
-                this.split(nodeIndex);
+                this.split(nodeIndex, boundOffset);
             }
 
             if (this.nodesRef[boundOffset]) {
-                this.insertBatch(boundOffset, rect, "insert");
+                this.insertBatch(nodeIndex, boundOffset, rect, "insert");
             }
 
             if (this.nodesRef[boundOffset] === 0) {
@@ -145,4 +148,42 @@ export class QuadGrid implements iQuadGrid {
         }
     }
 
+    dispose() {
+        delete this.nodeX;
+        delete this.nodeY;
+        delete this.nodeW;
+        delete this.nodeH;
+        delete this.nodesLevel;
+        delete this.nodesCovered;
+        delete this.nodesTaken;
+        delete this.nodesRef;
+    }
+
+    reset() {
+        this.nodeX.fill(0);
+        this.nodeY.fill(0);
+        this.nodeW.fill(0);
+        this.nodeH.fill(0);
+        this.nodesCovered.fill(0);
+        this.nodesLevel.fill(0);
+        this.nodesTaken.fill(0);
+        this.nodesRef.fill(0);
+
+        this.nodeAnchor = 0;
+        this.rootNode();
+    }
+
+    fillAll(num: number) {
+        this.nodeX.fill(num);
+        this.nodeY.fill(num);
+        this.nodeW.fill(num);
+        this.nodeH.fill(num);
+        this.nodesCovered.fill(num);
+        this.nodesLevel.fill(num);
+        this.nodesTaken.fill(num);
+        this.nodesRef.fill(num);
+
+        this.nodeAnchor = 0;
+        this.rootNode();
+    }
 }

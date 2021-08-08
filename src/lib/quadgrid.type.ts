@@ -2,13 +2,10 @@ export interface iQuadGrid {
     cellItemsMax?: number,
     cellDepthMax?: number,
     cellMinSize?: number,
-    root: iQuadNode;
 
-    // rectBounds: bBound,
-    // nodeBounds: bBound,
-    // nodes: bNode,
-    // nodesMap: bNodeMap,
-    // rectsMap: ,
+    nodeBounds: bBound,
+    nodesInfo: bNodeInfo,
+    nodesRef: bNode,
 }
 
 
@@ -26,5 +23,11 @@ export type iBound = number[];  // x, y, width, height,
 
 // 0 to 65535
 export type bBound = Int16Array;    // [mx, my, hw, hh]
-export type bNode = Int8Array;     // [level, covered, taken]
-export type bNodeMap = Int32Array;     // [ltId, rtId, rbId, lbId]
+export type bNode = Int32Array;      // [ltId, rtId, rbId, lbId]
+export type bNodeInfo = Int8Array;     // [level, covered, taken]
+
+export const epNodeInfo = {
+    level: 0,
+    covered: 1,
+    taken: 2,
+}

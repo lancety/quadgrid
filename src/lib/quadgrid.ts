@@ -1,4 +1,4 @@
-import {iBound, iQuadGrid, iQuadNode} from "./quadgrid.type";
+import {epNodeInfo, iBound, iQuadGrid, iQuadNode} from "./quadgrid.type";
 
 export function QuadNode(bound: iBound, level: number): iQuadNode {
     return {
@@ -9,60 +9,56 @@ export function QuadNode(bound: iBound, level: number): iQuadNode {
 }
 
 export class QuadGrid implements iQuadGrid {
-    root: iQuadNode;
     cellMinSize: number;
+    cellBatchSize = 100000;
+
+    nodeBounds: Int16Array;
+    nodesInfo: Int8Array;
+    nodesInfoSize = Object.keys(epNodeInfo).length;  // [level, covered, taken]
+    nodesRef: Int32Array;
+
+    nodeAnchor = 0;
 
     constructor(public width, public height,
-                public cellDepthMax = 6, public cellItemsMax = 10) {
+                public cellDepthMax = 6) {
         this.cellMinSize = Math.min(width, height) / Math.pow(2, cellDepthMax);
-        this.root = QuadNode([width / 2, height / 2, width / 2, height / 2], 0);
+
+        this.nodeBounds = new Int16Array(this.cellBatchSize * 4);
+        this.nodesRef = new Int32Array(this.cellBatchSize * 4);
+        this.nodesInfo = new Int8Array(this.cellBatchSize * this.nodesInfoSize);
+
+        this.newNode(width / 2, height / 2, width / 2, height / 2, 0);
     }
 
-    split(node: iQuadNode) {
-        const nextLevel = node.level + 1,
-            x = node.bound[0],
-            y = node.bound[1],
-            subWidth = node.bound[2] / 2,
-            subHeight = node.bound[3] / 2;
-
-        node.nodes.push(
-            //lt
-            QuadNode([
-                x - subWidth,
-                y - subHeight,
-                subWidth,
-                subHeight
-            ], nextLevel),
-
-            //rt
-            QuadNode([
-                x + subWidth,
-                y - subHeight,
-                subWidth,
-                subHeight
-            ], nextLevel),
-
-            //rb
-            QuadNode([
-                x + subWidth,
-                y + subHeight,
-                subWidth,
-                subHeight
-            ], nextLevel),
-
-            //lb
-            QuadNode([
-                x - subWidth,
-                y + subHeight,
-                subWidth,
-                subHeight
-            ], nextLevel),)
+    newNode(mx: number, my: number, hw: number, hh: number, level: number) {
+        this.nodeBounds.set([mx, my, hw, hh], this.nodeAnchor * 4);
+        this.nodesInfo[this.nodeAnchor * 3] = level;
+        const nodeIndex = this.nodeAnchor;
+        this.nodeAnchor++;
+        return nodeIndex;
     }
 
-    getIndex(node: iQuadNode, rect: iBound) {
+
+    split(nodeIndex: number) {
+        const boundOffset = nodeIndex * 4;
+        const nextLevel = this.nodesInfo[nodeIndex * this.nodesInfoSize + epNodeInfo.level] + 1,
+            x = this.nodeBounds[boundOffset],
+            y = this.nodeBounds[boundOffset + 1],
+            subWidth = this.nodeBounds[boundOffset + 2] / 2,
+            subHeight = this.nodeBounds[boundOffset + 3] / 2;
+
+        this.nodesRef.set([
+            this.newNode(x - subWidth, y - subHeight, subWidth, subHeight, nextLevel), //lt
+            this.newNode(x + subWidth, y - subHeight, subWidth, subHeight, nextLevel), //rt
+            this.newNode(x + subWidth, y + subHeight, subWidth, subHeight, nextLevel), //rb
+            this.newNode(x - subWidth, y + subHeight, subWidth, subHeight, nextLevel), //lb
+        ], boundOffset);
+    }
+
+    getIndex(boundOffset: number, rect: iBound) {
         let indexes = 0b0,
-            verticalMidpoint = node.bound[0] ,
-            horizontalMidpoint = node.bound[1];
+            verticalMidpoint = this.nodeBounds[boundOffset],
+            horizontalMidpoint = this.nodeBounds[boundOffset + 1];
 
         const startIsNorth = rect[1] - rect[3] < horizontalMidpoint,
             startIsWest = rect[0] - rect[2] < verticalMidpoint,
@@ -92,45 +88,53 @@ export class QuadGrid implements iQuadGrid {
         return indexes;
     }
 
-    merge(node: iQuadNode) {
-        node.nodes.splice(0);
+    merge(boundOffset: number) {
+        this.nodesRef.set([0, 0, 0, 0], boundOffset);
     }
 
-    inside(bound: iBound, rect: iBound) {
-        return bound[0] - bound[2] > rect[0] - rect[2] && bound[1] - bound[3] > rect[1] - rect[3] &&
-            bound[0] + bound[2] < rect[0] + rect[2] &&
-            bound[1] + bound[3] < rect[1] + rect[3];
+    /**
+     *
+     * @param {number} offset   nodeBounds index offset
+     * @param {iBound} rect
+     * @returns {boolean}
+     */
+    inside(offset: number, rect: iBound) {
+        return this.nodeBounds[offset] - this.nodeBounds[offset + 2] > rect[0] - rect[2] && this.nodeBounds[offset + 1] - this.nodeBounds[offset + 3] > rect[1] - rect[3] &&
+            this.nodeBounds[offset] + this.nodeBounds[offset + 2] < rect[0] + rect[2] &&
+            this.nodeBounds[offset + 1] + this.nodeBounds[offset + 3] < rect[1] + rect[3];
     }
 
-    insertBatch(node: iQuadNode, rect: iBound, method: string) {
-        const binaryIndexes = this.getIndex(node, rect);
-        binaryIndexes & 0b1 && this[method](node.nodes[0], rect);
-        binaryIndexes & 0b10 && this[method](node.nodes[1], rect);
-        binaryIndexes & 0b100 && this[method](node.nodes[2], rect);
-        binaryIndexes & 0b1000 && this[method](node.nodes[3], rect);
+    insertBatch(boundOffset: number, rect: iBound, method: string) {
+        const binaryIndexes = this.getIndex(boundOffset, rect);
+        binaryIndexes & 0b1 && this[method](this.nodesRef[boundOffset], rect);
+        binaryIndexes & 0b10 && this[method](this.nodesRef[boundOffset + 1], rect);
+        binaryIndexes & 0b100 && this[method](this.nodesRef[boundOffset + 2], rect);
+        binaryIndexes & 0b1000 && this[method](this.nodesRef[boundOffset + 3], rect);
     }
 
-    insert(node: iQuadNode, rect: iBound) {
-        const newCoverTest = this.inside(node.bound, rect);
+    insert(nodeIndex: number, rect: iBound) {
+        const boundOffset = nodeIndex * 4;
+        const infoOffset = nodeIndex * this.nodesInfoSize;
+        const newCoverTest = this.inside(boundOffset, rect);
         if (newCoverTest === true) {
-            if (node.covered !== true) {
-                this.merge(node);
-                node.taken = true;
-                node.covered = true;
+            if (this.nodesInfo[infoOffset + epNodeInfo.covered] !== 1) {
+                this.merge(boundOffset);
+                this.nodesInfo[infoOffset + epNodeInfo.taken] = 1;
+                this.nodesInfo[infoOffset + epNodeInfo.covered] = 1;
             }
         } else {
-            if (node.level < this.cellDepthMax && !node.covered && !node.nodes.length) {
-                this.split(node);
+            if (this.nodesInfo[infoOffset + epNodeInfo.level] < this.cellDepthMax && !this.nodesInfo[infoOffset + epNodeInfo.covered] && !this.nodesRef[boundOffset]) {
+                this.split(nodeIndex);
             }
 
-            if (node.nodes.length) {
-                this.insertBatch(node, rect, "insert");
+            if (this.nodesRef[boundOffset]) {
+                this.insertBatch(boundOffset, rect, "insert");
             }
 
-            if (node.nodes.length === 0) {
-                node.taken = true;
+            if (this.nodesRef[boundOffset] === 0) {
+                this.nodesInfo[infoOffset + epNodeInfo.taken] = 1;
             } else {
-                delete node.taken;
+                this.nodesInfo[infoOffset + epNodeInfo.taken] = 0;
             }
         }
     }

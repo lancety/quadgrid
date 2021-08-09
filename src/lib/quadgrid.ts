@@ -1,83 +1,84 @@
 import {bNode, iBound, iQuadGrid} from "./quadgrid.type";
 
 export class QuadGrid implements iQuadGrid {
-    cellDepthMax: number;
-    cellBatchSize = 100000;
+    _cellDepthMax: number;
+    _cellBatchSize = 100000;
 
-    nodeX: Float32Array;
-    nodeY: Float32Array;
-    nodeW: Float32Array;
-    nodeH: Float32Array;
-    nodesParent: bNode;
-    nodesRef: bNode;
+    xs: Float32Array;   // x array
+    ys: Float32Array;   // y array
+    ws: Float32Array;   // w array
+    hs: Float32Array;   // h array
+    ps: bNode;      // parent array
+    ms: bNode;      // map refs of 4 children array
 
-    nodesLevel: Int8Array;
-    nodesCovered: Int8Array;
-    nodesTaken: Int8Array;
+    ls: Int8Array;  // level array
+    cs: Int8Array;  // covered array
+    ts: Int8Array;  // taken array
 
-    nodeAnchor = 0;
+    a = 0;
 
     constructor(public width, public height, public cellMinSize) {
-        this.nodeX = new Float32Array(this.cellBatchSize);
-        this.nodeY = new Float32Array(this.cellBatchSize);
-        this.nodeW = new Float32Array(this.cellBatchSize);
-        this.nodeH = new Float32Array(this.cellBatchSize);
-        this.nodesLevel = new Int8Array(this.cellBatchSize);
-        this.nodesCovered = new Int8Array(this.cellBatchSize);
-        this.nodesTaken = new Int8Array(this.cellBatchSize);
-        this.nodesParent = new Int32Array(this.cellBatchSize);
-        this.nodesRef = new Int32Array(this.cellBatchSize * 4);
+        this.xs = new Float32Array(this._cellBatchSize);
+        this.ys = new Float32Array(this._cellBatchSize);
+        this.ws = new Float32Array(this._cellBatchSize);
+        this.hs = new Float32Array(this._cellBatchSize);
+        this.ls = new Int8Array(this._cellBatchSize);
+        this.cs = new Int8Array(this._cellBatchSize);
+        this.ts = new Int8Array(this._cellBatchSize);
+        this.ps = new Int32Array(this._cellBatchSize);
+        this.ms = new Int32Array(this._cellBatchSize * 4);
 
-        this.depth();
-        this.rootNode();
+        this._depth();
+        this._rootNode();
     }
 
-    depth() {
-        this.cellDepthMax = 0;
+    private _depth() {
+        this._cellDepthMax = 0;
         let boundSize = Math.min(this.width, this.height);
         while (boundSize > this.cellMinSize) {
             boundSize /= 2;
-            this.cellDepthMax++;
+            this._cellDepthMax++;
         }
 
     }
 
-    rootNode() {
-        this.newNode(0, this.width / 2, this.height / 2, this.width / 2, this.height / 2, 0);
+    private _rootNode() {
+        this._newNode(0, this.width / 2, this.height / 2, this.width / 2, this.height / 2, 0);
     }
 
-    newNode(parentIndex, mx: number, my: number, hw: number, hh: number, level: number) {
-        this.nodesParent[this.nodeAnchor] = parentIndex;
-        this.nodeX[this.nodeAnchor] = mx;
-        this.nodeY[this.nodeAnchor] = my;
-        this.nodeW[this.nodeAnchor] = hw;
-        this.nodeH[this.nodeAnchor] = hh;
-        this.nodesLevel[this.nodeAnchor] = level;
-        const nodeIndex = this.nodeAnchor;
-        this.nodeAnchor++;
+    private _newNode(parentIndex, mx: number, my: number, hw: number, hh: number, level: number) {
+        const a = this.a;
+        this.ps[a] = parentIndex;
+        this.xs[a] = mx;
+        this.ys[a] = my;
+        this.ws[a] = hw;
+        this.hs[a] = hh;
+        this.ls[a] = level;
+        const nodeIndex = a;
+        this.a++;
         return nodeIndex;
     }
 
 
-    merge(boundOffset: number) {
-        this.nodesRef.fill(0, boundOffset, boundOffset + 4);
+    private _merge(boundOffset: number) {
+        this.ms.fill(0, boundOffset, boundOffset + 4);
     }
 
-    split(nodeIndex: number, indexOffset: number) {
-        const nextLevel = this.nodesLevel[nodeIndex] + 1,
-            x = this.nodeX[nodeIndex],
-            y = this.nodeY[nodeIndex],
-            subWidth = this.nodeW[nodeIndex] / 2,
-            subHeight = this.nodeH[nodeIndex] / 2;
+    private _split(nodeIndex: number, indexOffset: number) {
+        const nextLevel = this.ls[nodeIndex] + 1,
+            x = this.xs[nodeIndex],
+            y = this.ys[nodeIndex],
+            subWidth = this.ws[nodeIndex] / 2,
+            subHeight = this.hs[nodeIndex] / 2;
 
-        this.nodesRef[indexOffset] =
-            this.newNode(nodeIndex, x - subWidth, y - subHeight, subWidth, subHeight, nextLevel); //lt
-        this.nodesRef[indexOffset + 1] =
-            this.newNode(nodeIndex, x + subWidth, y - subHeight, subWidth, subHeight, nextLevel); //rt
-        this.nodesRef[indexOffset + 2] =
-            this.newNode(nodeIndex, x + subWidth, y + subHeight, subWidth, subHeight, nextLevel); //rb
-        this.nodesRef[indexOffset + 3] =
-            this.newNode(nodeIndex, x - subWidth, y + subHeight, subWidth, subHeight, nextLevel); //lb
+        this.ms[indexOffset] =
+            this._newNode(nodeIndex, x - subWidth, y - subHeight, subWidth, subHeight, nextLevel); //lt
+        this.ms[indexOffset + 1] =
+            this._newNode(nodeIndex, x + subWidth, y - subHeight, subWidth, subHeight, nextLevel); //rt
+        this.ms[indexOffset + 2] =
+            this._newNode(nodeIndex, x + subWidth, y + subHeight, subWidth, subHeight, nextLevel); //rb
+        this.ms[indexOffset + 3] =
+            this._newNode(nodeIndex, x - subWidth, y + subHeight, subWidth, subHeight, nextLevel); //lb
 
     }
 
@@ -91,7 +92,7 @@ export class QuadGrid implements iQuadGrid {
      * @param {number} h    rect half height OR 0 for point
      * @returns {number}    lt=0, rt=1, rb=2, lb=3
      */
-    indexToCenter(centerX, centerY, x, y, w = 0, h = 0) {
+    private _indexToCenter(centerX, centerY, x, y, w = 0, h = 0) {
         const startIsNorth = y - h <= centerY,
             startIsWest = x - w <= centerX,
             endIsEast = x + w > centerX,
@@ -121,12 +122,12 @@ export class QuadGrid implements iQuadGrid {
         return indexes;
     }
 
-    indexCoveredOnNode(nodeIndex: number, rx: number, ry: number, rw: number, rh: number) {
-        return this.indexToCenter(this.nodeX[nodeIndex], this.nodeY[nodeIndex], rx, ry, rw, rh);
+    private _indexCoveredOnNode(nodeIndex: number, rx: number, ry: number, rw: number, rh: number) {
+        return this._indexToCenter(this.xs[nodeIndex], this.ys[nodeIndex], rx, ry, rw, rh);
     }
 
-    indexPointedOnNode(nodeIndex: number, x: number, y: number) {
-        return this.indexToCenter(this.nodeX[nodeIndex], this.nodeY[nodeIndex], x, y);
+    private _indexPointedOnNode(nodeIndex: number, x: number, y: number) {
+        return this._indexToCenter(this.xs[nodeIndex], this.ys[nodeIndex], x, y);
 
     }
 
@@ -139,14 +140,14 @@ export class QuadGrid implements iQuadGrid {
      * @param rh
      * @returns {boolean}
      */
-    covered(nodeIndex: number, rx: number, ry: number, rw: number, rh: number) {
-        return this.coveredCheck(
-            this.nodeX[nodeIndex], this.nodeY[nodeIndex], this.nodeW[nodeIndex], this.nodeH[nodeIndex],
+    private _covered(nodeIndex: number, rx: number, ry: number, rw: number, rh: number) {
+        return this._coveredCheck(
+            this.xs[nodeIndex], this.ys[nodeIndex], this.ws[nodeIndex], this.hs[nodeIndex],
             rx, ry, rw, rh
         )
     }
 
-    coveredCheck(sx, sy, sw, sh, lgx, lgy, lgw, lgh) {
+    private _coveredCheck(sx, sy, sw, sh, lgx, lgy, lgw, lgh) {
         const diffX = sx - lgx;
         const diffY = sy - lgy;
         const diffW = sw - lgw;
@@ -154,57 +155,57 @@ export class QuadGrid implements iQuadGrid {
         return diffW <= 0 && diffH <= 0 && diffX - diffW >= 0 && diffY - diffH >= 0 && diffX + diffW <= 0 && diffY + diffH <= 0;
     }
 
-    insert(nodeIndex: number, rx, ry, rw, rh) {
+    in(nodeIndex: number, rx, ry, rw, rh) {
         const indexOffset = nodeIndex * 4;
-        const newCoverTest = this.covered(nodeIndex, rx, ry, rw, rh);
+        const newCoverTest = this._covered(nodeIndex, rx, ry, rw, rh);
         if (newCoverTest === true) {
-            if (this.nodesCovered[nodeIndex] !== 1) {
-                this.merge(indexOffset);
-                this.nodesTaken[nodeIndex] = 1;
-                this.nodesCovered[nodeIndex] = 1;
+            if (this.cs[nodeIndex] !== 1) {
+                this._merge(indexOffset);
+                this.ts[nodeIndex] = 1;
+                this.cs[nodeIndex] = 1;
             }
         } else {
-            if (this.nodesLevel[nodeIndex] < this.cellDepthMax && !this.nodesCovered[nodeIndex] && !this.nodesRef[indexOffset]) {
-                this.split(nodeIndex, indexOffset);
+            if (this.ls[nodeIndex] < this._cellDepthMax && !this.cs[nodeIndex] && !this.ms[indexOffset]) {
+                this._split(nodeIndex, indexOffset);
             }
 
-            if (this.nodesRef[indexOffset]) {
-                const binaryIndexes = this.indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
-                binaryIndexes & 0b1 && this.insert(this.nodesRef[indexOffset], rx, ry, rw, rh);
-                binaryIndexes & 0b10 && this.insert(this.nodesRef[indexOffset + 1], rx, ry, rw, rh);
-                binaryIndexes & 0b100 && this.insert(this.nodesRef[indexOffset + 2], rx, ry, rw, rh);
-                binaryIndexes & 0b1000 && this.insert(this.nodesRef[indexOffset + 3], rx, ry, rw, rh);
+            if (this.ms[indexOffset]) {
+                const binaryIndexes = this._indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
+                binaryIndexes & 0b1 && this.in(this.ms[indexOffset], rx, ry, rw, rh);
+                binaryIndexes & 0b10 && this.in(this.ms[indexOffset + 1], rx, ry, rw, rh);
+                binaryIndexes & 0b100 && this.in(this.ms[indexOffset + 2], rx, ry, rw, rh);
+                binaryIndexes & 0b1000 && this.in(this.ms[indexOffset + 3], rx, ry, rw, rh);
             }
 
-            if (this.nodesRef[indexOffset] === 0) {
-                this.nodesTaken[nodeIndex] = 1;
+            if (this.ms[indexOffset] === 0) {
+                this.ts[nodeIndex] = 1;
             } else {
-                this.nodesTaken[nodeIndex] = 0;
+                this.ts[nodeIndex] = 0;
             }
         }
     }
 
-    insertBatch(rects: iBound[]) {
+    ins(rects: iBound[]) {
         const start = typeof performance === "undefined" ? Date.now() : performance.now();
         rects.forEach(rect => {
-            this.insert(0, rect[0], rect[1], rect[2], rect[3]);
+            this.in(0, rect[0], rect[1], rect[2], rect[3]);
         })
         const startUi = typeof performance === "undefined" ? Date.now() : performance.now();
         return startUi - start;
     }
 
-    neighbourTopParentIndex(nodeIndex: number, rx: number, ry: number, rw: number, rh: number): number {
-        const parentIndex = this.nodesParent[nodeIndex];
+    private _neighbourTopParentIndex(nodeIndex: number, rx: number, ry: number, rw: number, rh: number): number {
+        const parentIndex = this.ps[nodeIndex];
         if (parentIndex === 0)
             return parentIndex;
 
-        const inside = this.coveredCheck(
+        const inside = this._coveredCheck(
             rx, ry, rw, rh,
-            this.nodeX[parentIndex], this.nodeY[parentIndex], this.nodeW[parentIndex], this.nodeH[parentIndex]);
+            this.xs[parentIndex], this.ys[parentIndex], this.ws[parentIndex], this.hs[parentIndex]);
         if (inside) {
             return parentIndex;
         } else {
-            return this.neighbourTopParentIndex(parentIndex, rx, ry, rw, rh);
+            return this._neighbourTopParentIndex(parentIndex, rx, ry, rw, rh);
         }
     }
 
@@ -216,26 +217,26 @@ export class QuadGrid implements iQuadGrid {
      * @param ry
      * @param rw
      * @param rh
-     * @param {number} collideRadius if > 0 - with blocker neighbour, neighboursIndex[-1] = 1
+     * @param minNeighbourRadius  min half size (radius) will be considered as a neighbour
      * @returns {number[]}
      */
-    neighbourQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, collideRadius?: number): number[] {
+    private _neighbourQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, minNeighbourRadius = 0): number[] {
+        if (minNeighbourRadius && (this.ws[nodeIndex] < minNeighbourRadius || this.hs[nodeIndex] < minNeighbourRadius)) {
+            return;
+        }
+
         const indexOffset = nodeIndex * 4;
-        const indexOfRect = this.indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
+        const indexOfRect = this._indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
         if (indexOfRect > 0) {
-            if (this.nodesRef[indexOffset] === 0) {
-                if (this.nodesTaken[nodeIndex] === 0) {
+            if (this.ms[indexOffset] === 0) {
+                if (this.ts[nodeIndex] === 0) {
                     neighboursIndex.push(nodeIndex)
-                } else {
-                    if (collideRadius) {
-                        neighboursIndex[-1] = 1;
-                    }
                 }
             } else {
-                indexOfRect & 0b1 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset], rx, ry, rw, rh, collideRadius);
-                indexOfRect & 0b10 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 1], rx, ry, rw, rh, collideRadius);
-                indexOfRect & 0b100 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 2], rx, ry, rw, rh, collideRadius);
-                indexOfRect & 0b1000 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 3], rx, ry, rw, rh, collideRadius);
+                indexOfRect & 0b1 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b10 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset + 1], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b100 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset + 2], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b1000 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset + 3], rx, ry, rw, rh, minNeighbourRadius);
             }
         }
 
@@ -243,43 +244,62 @@ export class QuadGrid implements iQuadGrid {
     }
 
 
-    neighbours(nodeIndex: number, collideRadius?: number): number[] {
+    nbs(nodeIndex: number, minNeighbourRadius = 0): number[] {
         const extraBound = this.cellMinSize / 2;
-        const rx = this.nodeX[nodeIndex],
-            ry = this.nodeY[nodeIndex];
-        let rw, rh;
-        if (collideRadius) {
-            rw = collideRadius;
-            rh = collideRadius;
-        } else {
-            rw = this.nodeW[nodeIndex] + extraBound;
-            rh = this.nodeH[nodeIndex] + extraBound;
-        }
-        const topParent = this.neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
-        return this.neighbourQuery([], topParent, rx, ry, rw, rh, collideRadius);
+        const rx = this.xs[nodeIndex],
+            ry = this.ys[nodeIndex];
+        const rw = this.ws[nodeIndex] + extraBound;
+        const rh = this.hs[nodeIndex] + extraBound;
+        const topParent = this._neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
+        return this._neighbourQuery([], topParent, rx, ry, rw, rh, minNeighbourRadius);
     }
 
-    neighbourCollideCheck(nodeIndex: number, collideRadius?: number): boolean {
-        if (this.nodeW[nodeIndex] >= collideRadius && this.nodeH[nodeIndex] >= collideRadius) {
-            return false;
-        } else {
-            const neighboursCollideCheck = this.neighbours(nodeIndex, collideRadius);
-            return neighboursCollideCheck[-1] === 1;
-        }
-    }
-
-
-    nodeOfPoint(nodeIndex: number, x: number, y: number): number {
+    private _neighbourCollideQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh): number[] {
         const indexOffset = nodeIndex * 4;
-        if (this.nodesRef[indexOffset] === 0) {
+        const indexOfRect = this._indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
+        if (indexOfRect > 0) {
+            if (this.ms[indexOffset] === 0) {
+                if (this.ts[nodeIndex] === 0) {
+                    neighboursIndex.push(nodeIndex)
+                } else {
+                    neighboursIndex[-1] = 1;
+                }
+            } else {
+                indexOfRect & 0b1 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset], rx, ry, rw, rh);
+                indexOfRect & 0b10 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset + 1], rx, ry, rw, rh);
+                indexOfRect & 0b100 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset + 2], rx, ry, rw, rh);
+                indexOfRect & 0b1000 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset + 3], rx, ry, rw, rh);
+            }
+        }
+
+        return neighboursIndex;
+    }
+
+    nbc(nodeIndex: number, collideRadius = 0): boolean {
+        if (this.ws[nodeIndex] >= collideRadius && this.hs[nodeIndex] >= collideRadius) {
+            return false;
+        }
+
+        const rx = this.xs[nodeIndex],
+            ry = this.ys[nodeIndex],
+            rw = collideRadius,
+            rh = collideRadius;
+        const topParent = this._neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
+        const neighboursCollideCheck = this._neighbourCollideQuery([], topParent, rx, ry, rw, rh);
+        return neighboursCollideCheck[-1] === 1;
+    }
+
+    np(nodeIndex: number, x: number, y: number): number {
+        const indexOffset = nodeIndex * 4;
+        if (this.ms[indexOffset] === 0) {
             return nodeIndex;
         } else {
-            const indexOfPoint = this.indexPointedOnNode(nodeIndex, x, y);
-            if (this.nodesRef[indexOffset] > 0 && indexOfPoint > 0) {
-                if (indexOfPoint & 0b1) return this.nodeOfPoint(this.nodesRef[indexOffset], x, y);
-                else if (indexOfPoint & 0b10) return this.nodeOfPoint(this.nodesRef[indexOffset + 1], x, y);
-                else if (indexOfPoint & 0b100) return this.nodeOfPoint(this.nodesRef[indexOffset + 2], x, y);
-                else if (indexOfPoint & 0b1000) return this.nodeOfPoint(this.nodesRef[indexOffset + 3], x, y);
+            const indexOfPoint = this._indexPointedOnNode(nodeIndex, x, y);
+            if (this.ms[indexOffset] > 0 && indexOfPoint > 0) {
+                if (indexOfPoint & 0b1) return this.np(this.ms[indexOffset], x, y);
+                else if (indexOfPoint & 0b10) return this.np(this.ms[indexOffset + 1], x, y);
+                else if (indexOfPoint & 0b100) return this.np(this.ms[indexOffset + 2], x, y);
+                else if (indexOfPoint & 0b1000) return this.np(this.ms[indexOffset + 3], x, y);
             } else {
                 return nodeIndex;
             }
@@ -287,28 +307,28 @@ export class QuadGrid implements iQuadGrid {
     }
 
 
-    dispose() {
-        delete this.nodeX;
-        delete this.nodeY;
-        delete this.nodeW;
-        delete this.nodeH;
-        delete this.nodesLevel;
-        delete this.nodesCovered;
-        delete this.nodesTaken;
-        delete this.nodesRef;
+    del() {
+        delete this.xs;
+        delete this.ys;
+        delete this.ws;
+        delete this.hs;
+        delete this.ls;
+        delete this.cs;
+        delete this.ts;
+        delete this.ms;
     }
 
     reset() {
-        this.nodeX.fill(0);
-        this.nodeY.fill(0);
-        this.nodeW.fill(0);
-        this.nodeH.fill(0);
-        this.nodesCovered.fill(0);
-        this.nodesLevel.fill(0);
-        this.nodesTaken.fill(0);
-        this.nodesRef.fill(0);
+        this.xs.fill(0);
+        this.ys.fill(0);
+        this.ws.fill(0);
+        this.hs.fill(0);
+        this.cs.fill(0);
+        this.ls.fill(0);
+        this.ts.fill(0);
+        this.ms.fill(0);
 
-        this.nodeAnchor = 0;
-        this.rootNode();
+        this.a = 0;
+        this._rootNode();
     }
 }

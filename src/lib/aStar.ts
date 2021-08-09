@@ -23,25 +23,25 @@ export class AStarFinder implements iAStar {
 
 
     _nodeOfPoint(x: number, y: number): number {
-        return this._quadGrid.nodeOfPoint(0, x, y);
+        return this._quadGrid.np(0, x, y);
     }
 
     _nodeX(nodeIndex: number): number {
-        return this._quadGrid.nodeX[nodeIndex];
+        return this._quadGrid.xs[nodeIndex];
     }
 
     _nodeY(nodeIndex: number): number {
-        return this._quadGrid.nodeY[nodeIndex];
+        return this._quadGrid.ys[nodeIndex];
     }
 
     _initGrid(quadGrid: iQuadGrid) {
-        if (this._parentArray?.length === quadGrid.nodeAnchor) return;
-        this._gArray = new Int16Array(quadGrid.nodeAnchor);
-        this._fArray = new Int16Array(quadGrid.nodeAnchor);
-        this._hArray = new Int16Array(quadGrid.nodeAnchor);
-        this._openedArray = new Int8Array(quadGrid.nodeAnchor);
-        this._closedArray = new Int8Array(quadGrid.nodeAnchor);
-        this._parentArray = new Int32Array(quadGrid.nodeAnchor);
+        if (this._parentArray?.length === quadGrid.a) return;
+        this._gArray = new Int16Array(quadGrid.a);
+        this._fArray = new Int16Array(quadGrid.a);
+        this._hArray = new Int16Array(quadGrid.a);
+        this._openedArray = new Int8Array(quadGrid.a);
+        this._closedArray = new Int8Array(quadGrid.a);
+        this._parentArray = new Int32Array(quadGrid.a);
 
     }
 
@@ -63,14 +63,13 @@ export class AStarFinder implements iAStar {
         return path.reverse();
     }
 
-    findPath(sx, sy, ex, ey, grid, collideRadius?: number): number[] {
+    ps(sx, sy, ex, ey, grid, collideRadius?: number): number[] {
         const startNode = this._nodeOfPoint(sx, sy),
             endNode = this._nodeOfPoint(ex, ey);
-        if (collideRadius) {
-            const sqrtRadius = Math.sqrt(collideRadius);
-            if (this._quadGrid.nodeW[endNode] <= sqrtRadius || this._quadGrid.nodeH[endNode] <= sqrtRadius) {
-                return [];
-            }
+        const minNeighbourRadius = collideRadius ? collideRadius / 2 : 0;
+        if (collideRadius && this._quadGrid.nbc(endNode, collideRadius)) {
+            console.log("collided")
+            return [];
         }
 
         this._initGrid(grid);
@@ -79,7 +78,7 @@ export class AStarFinder implements iAStar {
                 return this._fArray[nodeA] - this._fArray[nodeB];
             });
 
-        if (this._quadGrid.nodesTaken[startNode] || this._quadGrid.nodesTaken[endNode]) {
+        if (this._quadGrid.ts[startNode] || this._quadGrid.ts[endNode]) {
             return [];
         }
 
@@ -108,7 +107,7 @@ export class AStarFinder implements iAStar {
             }
 
             // get neigbours of the current node
-            neighbors = this._quadGrid.neighbours(node);
+            neighbors = this._quadGrid.nbs(node, minNeighbourRadius);
             for (i = 0, l = neighbors.length; i < l; ++i) {
                 neighbor = neighbors[i];
 
@@ -116,7 +115,7 @@ export class AStarFinder implements iAStar {
                     continue;
                 }
 
-                if (collideRadius && this._quadGrid.neighbourCollideCheck(neighbor, collideRadius)) {
+                if (collideRadius && this._quadGrid.nbc(neighbor, collideRadius)) {
                     if (neighbor === endNode) {
                             const path = this._backtrace(node);
                             path.push(endNode);
@@ -125,6 +124,8 @@ export class AStarFinder implements iAStar {
                         continue;
                     }
                 }
+
+                // todo if 2 same level nodes, not tblr direction, then check corner if safe to pass.
 
                 x = this._nodeX(node);
                 y = this._nodeY(node)

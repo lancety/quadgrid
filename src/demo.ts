@@ -49,13 +49,13 @@ canvas.addEventListener("mousemove", function (e: any) {
         e.offsetY = e.layerY - e.target.offsetTop;
     }
     states.focus = [e.offsetX, e.offsetY];
-    const nodeIndex = grid.nodeOfPoint(0, e.offsetX, e.offsetY);
-    states.pathTo = [grid.nodeX[nodeIndex], grid.nodeY[nodeIndex]];
+    const nodeIndex = grid.np(0, e.offsetX, e.offsetY);
+    states.pathTo = [grid.xs[nodeIndex], grid.ys[nodeIndex]];
 
     const lastNodeInPath = states.path && states.path[states.path.length - 1];
     if (states.rects.length > 0 && lastNodeInPath !== nodeIndex) {
-        console.log(`node ${nodeIndex}, x ${grid.nodeX[nodeIndex]}, y ${grid.nodeY[nodeIndex]}, w ${grid.nodeW[nodeIndex]}, h ${grid.nodeH[nodeIndex]}`);
-        states.path = path.findPath(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid, 20);
+        console.log(`node ${nodeIndex}, x ${grid.xs[nodeIndex]}, y ${grid.ys[nodeIndex]}, w ${grid.ws[nodeIndex]}, h ${grid.hs[nodeIndex]}`);
+        states.path = path.ps(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid, 19);
     }
 });
 canvas.addEventListener("mouseout", function (e) {
@@ -77,11 +77,10 @@ canvas.addEventListener("mouseout", function (e) {
 * */
 
 (window as any).addNodes = function (amount: number, large = false) {
-    const rects = states.rects = makeRects(width, height, min, max, amount, large)
-    grid.reset();
-    const duration = grid.insertBatch(rects)
+    states.rects.push(...makeRects(width, height, min, max, amount, large));
+    const duration = grid.ins(states.rects)
     console.log(`add ${amount} duration`, duration)
-    console.log(`allNodes`, grid.nodeAnchor);
+    console.log(`allNodes`, grid.a);
 }
 
 
@@ -94,9 +93,9 @@ function _updateUI() {
 
     states.neighbours.clear();
     if (states.focusActive) {
-        const nodeOfPoint = grid.nodeOfPoint(0, states.focus[0], states.focus[1]);
+        const nodeOfPoint = grid.np(0, states.focus[0], states.focus[1]);
         // console.log(states.focus, grid.nodeX[nodeOfPoint], grid.nodeY[nodeOfPoint], grid.nodeW[nodeOfPoint], grid.nodeH[nodeOfPoint], grid.nodesLevel[nodeOfPoint])
-        grid.nodesTaken[nodeOfPoint] === 0 && grid.neighbours(nodeOfPoint).forEach(neighbourIndex => {
+        grid.ts[nodeOfPoint] === 0 && grid.nbs(nodeOfPoint).forEach(neighbourIndex => {
             states.neighbours.add(neighbourIndex);
         })
 
@@ -118,7 +117,7 @@ function _drawPath() {
         ctx.beginPath();
         ctx.moveTo(states.pathFrom[0], states.pathFrom[1]);
         states.path.forEach(node => {
-            ctx.lineTo(grid.nodeX[node], grid.nodeY[node]);
+            ctx.lineTo(grid.xs[node], grid.ys[node]);
         })
         ctx.stroke();
     }
@@ -127,9 +126,9 @@ function _drawPath() {
 function _drawGridActive(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if (grid.nodesRef[boundOffset]) {
+    if (grid.ms[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridActive(grid.nodesRef[boundOffset + i])
+            _drawGridActive(grid.ms[boundOffset + i])
         }
     } else {
         if (states.neighbours.has(nodeIndex)) {
@@ -143,12 +142,12 @@ function _drawGridActive(nodeIndex?: number) {
 function _drawGridNodes(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if (grid.nodesRef[boundOffset]) {
+    if (grid.ms[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridNodes(grid.nodesRef[boundOffset + i])
+            _drawGridNodes(grid.ms[boundOffset + i])
         }
     } else {
-        if (!grid.nodesTaken[nodeIndex]) {
+        if (!grid.ts[nodeIndex]) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))
@@ -159,12 +158,12 @@ function _drawGridNodes(nodeIndex?: number) {
 function _drawGridTaken(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if (grid.nodesRef[boundOffset]) {
+    if (grid.ms[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridTaken(grid.nodesRef[boundOffset + i])
+            _drawGridTaken(grid.ms[boundOffset + i])
         }
     } else {
-        if (grid.nodesTaken[nodeIndex]) {
+        if (grid.ts[nodeIndex]) {
             ctx.fillStyle = "rgba(6, 6, 6, 0.8)";
             // @ts-ignore
             ctx.fillRect(..._getBound(nodeIndex))
@@ -175,12 +174,12 @@ function _drawGridTaken(nodeIndex?: number) {
 function _drawGridTakenStroke(nodeIndex?: number) {
     if (nodeIndex === 0) return;
     const boundOffset = (nodeIndex || 0) * 4;
-    if (grid.nodesRef[boundOffset]) {
+    if (grid.ms[boundOffset]) {
         for (let i = 0; i < 4; i++) {
-            _drawGridTakenStroke(grid.nodesRef[boundOffset + i])
+            _drawGridTakenStroke(grid.ms[boundOffset + i])
         }
     } else {
-        if (grid.nodesTaken[nodeIndex]) {
+        if (grid.ts[nodeIndex]) {
             ctx.strokeStyle = "rgba(152,11,11,0.8)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))
@@ -189,10 +188,10 @@ function _drawGridTakenStroke(nodeIndex?: number) {
 }
 
 function _getBound(nodeIndex) {
-    const {nodeX, nodeY, nodeW, nodeH} = grid;
-    const x = nodeX[nodeIndex];
-    const y = nodeY[nodeIndex];
-    const w = nodeW[nodeIndex];
-    const h = nodeH[nodeIndex];
+    const {xs, ys, ws, hs} = grid;
+    const x = xs[nodeIndex];
+    const y = ys[nodeIndex];
+    const w = ws[nodeIndex];
+    const h = hs[nodeIndex];
     return [x - w, y - h, w * 2, h * 2];
 }

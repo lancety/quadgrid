@@ -18,9 +18,9 @@ const grid = new QuadGrid(width, height, 9);
 const addNodes = function(amount: number, large = false) {
     const rects = states.rects = makeRects(width, height, min, max, amount, large)
     grid.reset();
-    const duration = grid.insertBatch(rects)
+    const duration = grid.ins(rects)
     console.log(`add ${amount} duration`, duration)
-    console.log(`allNodes`, grid.nodeAnchor);
+    console.log(`allNodes`, grid.a);
 }
 
 

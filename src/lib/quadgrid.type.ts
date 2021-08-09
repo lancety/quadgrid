@@ -1,26 +1,26 @@
 export interface iQuadGrid {
-    cellBatchSize: number,
-    cellDepthMax: number,
+    _cellBatchSize: number,
+    _cellDepthMax: number,
     cellMinSize: number,
 
     width: number,
     height: number,
 
-    nodeX: Float32Array,
-    nodeY: Float32Array,
-    nodeW: Float32Array,
-    nodeH: Float32Array,
-    nodesParent: bNode;
-    nodesRef: bNode,
-    nodesLevel: Int8Array,
-    nodesTaken: Int8Array,
-    nodesCovered: Int8Array,
+    xs: Float32Array,
+    ys: Float32Array,
+    ws: Float32Array,
+    hs: Float32Array,
+    ps: bNode;
+    ms: bNode,
+    ls: Int8Array,
+    ts: Int8Array,
+    cs: Int8Array,
 
-    nodeAnchor: number,
+    a: number,
 
-    nodeOfPoint: (nodeIndex: number, x: number, y: number) => number,
-    neighbours: (nodeIndex: number, collideRadius?: number) => number[],
-    neighbourCollideCheck: (nodeIndex: number, collideRadius?: number) => boolean,
+    np: (nodeIndex: number, x: number, y: number) => number,
+    nbs: (nodeIndex: number, minNeightbourRadius?: number) => number[],
+    nbc: (nodeIndex: number, collideRadius: number) => boolean,
 }
 
 export type iBound = number[];  // mx, my, hw, hh,

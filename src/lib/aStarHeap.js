@@ -346,7 +346,7 @@
             return this.nodes.slice(0);
         };
 
-        Heap.prototype.insert = Heap.prototype.push;
+        Heap.prototype.in = Heap.prototype.push;
 
         Heap.prototype.top = Heap.prototype.peek;
 

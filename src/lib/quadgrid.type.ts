@@ -1,12 +1,16 @@
 export interface iQuadGrid {
-    cellItemsMax?: number,
-    cellDepthMax?: number,
-    cellMinSize?: number,
+    cellBatchSize: number,
+    cellDepthMax: number,
+    cellMinSize: number,
+
+    width: number,
+    height: number,
 
     nodeX: Float32Array,
     nodeY: Float32Array,
     nodeW: Float32Array,
     nodeH: Float32Array,
+    nodesParent: bNode;
     nodesRef: bNode,
     nodesLevel: Int8Array,
     nodesTaken: Int8Array,

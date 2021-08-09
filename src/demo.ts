@@ -3,22 +3,19 @@ import {iBound} from "./lib/quadgrid.type";
 import {makeRects} from "./demoUtil";
 
 const width = 1600, height = 1200;
-const min = 2, max = 10;
+const min = 5, max = 20;
 
-let maxDepth = 0;
-let boundSize = Math.min(width, height);
-while (boundSize > min) {
-    boundSize /= 2;
-    maxDepth++;
-}
 
-const grid = (window as any).grid = new QuadGrid(width, height, maxDepth);
+const grid = (window as any).grid = new QuadGrid(width, height, min);
 
 /*
 * states
 * */
 const states = {
-    rects: [] as iBound[]
+    rects: [] as iBound[],
+    focus: [0, 0],
+    focusActive: false,
+    neighbours: new Set(),
 }
 
 /*
@@ -34,7 +31,18 @@ const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 /*
 * mouse event
 * */
-
+canvas.addEventListener("mousemove", function (e: any) {
+    states.focusActive = true;
+    if (!e.offsetX) {
+        e.offsetX = e.layerX - e.target.offsetLeft;
+        e.offsetY = e.layerY - e.target.offsetTop;
+    }
+    states.focus[0] = e.offsetX;
+    states.focus[1] = e.offsetY;
+});
+canvas.addEventListener("mouseout", function (e) {
+    states.focusActive = false;
+});
 
 /*
 * main
@@ -65,13 +73,38 @@ const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 * */
 function _updateUI() {
     ctx.clearRect(0, 0, width, height);
-
     document.getElementById("info_count").innerText = states.rects.length + "";
 
+    states.neighbours.clear();
+    if (states.focusActive) {
+        const nodeOfPoint = grid.nodeOfPoint(0, states.focus[0], states.focus[1]);
+        // console.log(states.focus, grid.nodeX[nodeOfPoint], grid.nodeY[nodeOfPoint], grid.nodeW[nodeOfPoint], grid.nodeH[nodeOfPoint], grid.nodesLevel[nodeOfPoint])
+        grid.nodesTaken[nodeOfPoint] === 0 && grid.neighbour(nodeOfPoint).forEach(neighbourIndex => {
+            states.neighbours.add(neighbourIndex);
+        })
+    }
+
     // draw grid
+    _drawGridActive();
     _drawGridNodes();
     _drawGridTaken();
     _drawGridTakenStroke();
+}
+
+function _drawGridActive(nodeIndex?: number) {
+    if (nodeIndex === 0) return;
+    const boundOffset = (nodeIndex || 0) * 4;
+    if (grid.nodesRef[boundOffset]) {
+        for (let i = 0; i < 4; i++) {
+            _drawGridActive(grid.nodesRef[boundOffset + i])
+        }
+    } else {
+        if (states.neighbours.has(nodeIndex)) {
+            ctx.fillStyle = "rgb(220,33,255, 0.6)";
+            // @ts-ignore
+            ctx.fillRect(..._getBound(nodeIndex))
+        }
+    }
 }
 
 function _drawGridNodes(nodeIndex?: number) {
@@ -81,8 +114,7 @@ function _drawGridNodes(nodeIndex?: number) {
         for (let i = 0; i < 4; i++) {
             _drawGridNodes(grid.nodesRef[boundOffset + i])
         }
-    } else {
-        if (!grid.nodesTaken[nodeIndex]) {
+    } else {if (!grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))
@@ -101,7 +133,7 @@ function _drawGridTaken(nodeIndex?: number) {
         if (grid.nodesTaken[nodeIndex]) {
             ctx.fillStyle = "rgba(6, 6, 6, 0.8)";
             // @ts-ignore
-            ctx.strokeRect(..._getBound(nodeIndex))
+            ctx.fillRect(..._getBound(nodeIndex))
         }
     }
 }

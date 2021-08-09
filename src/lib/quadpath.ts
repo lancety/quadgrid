@@ -1,12 +1,12 @@
-import {AStarBFSFinder} from "./aStarBFS";
 import {iQuadPathProps} from "./quadpath.type";
 import {iAStar} from "./aStar.type";
+import {AStarFinder} from "./aStar";
 
 export class QuadPath {
     private _finder: iAStar;
 
     constructor(opt: iQuadPathProps) {
-        this._finder= new AStarBFSFinder(opt.finderConfig);
+        this._finder= new AStarFinder(opt.finderConfig);
     }
 
     public findPath(sx, sy, es, ey, grid): number[] {

@@ -18,6 +18,9 @@ const states = {
     focus: [0, 0],
     focusActive: false,
     neighbours: new Set(),
+    pathFrom: [1,1],
+    pathTo: undefined,
+    path: undefined,
 }
 
 /*
@@ -39,8 +42,11 @@ canvas.addEventListener("mousemove", function (e: any) {
         e.offsetX = e.layerX - e.target.offsetLeft;
         e.offsetY = e.layerY - e.target.offsetTop;
     }
-    states.focus[0] = e.offsetX;
-    states.focus[1] = e.offsetY;
+    states.focus = states.pathTo = [e.offsetX, e.offsetY];
+
+    if (states.rects.length > 0) {
+        states.path = path.findPath(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid);
+    }
 });
 canvas.addEventListener("mouseout", function (e) {
     states.focusActive = false;
@@ -83,6 +89,8 @@ function _updateUI() {
         grid.nodesTaken[nodeOfPoint] === 0 && grid.neighbours(nodeOfPoint).forEach(neighbourIndex => {
             states.neighbours.add(neighbourIndex);
         })
+
+        _drawPath();
     }
 
     // draw grid
@@ -90,6 +98,20 @@ function _updateUI() {
     _drawGridNodes();
     _drawGridTaken();
     _drawGridTakenStroke();
+}
+
+function _drawPath() {
+    if (states.pathTo) {
+        if (states.path === undefined) return;
+
+        ctx.strokeStyle = "rgb(251,255,0)";
+        ctx.beginPath();
+        ctx.moveTo(states.pathFrom[0], states.pathFrom[1]);
+        states.path.forEach(node => {
+            ctx.lineTo(grid.nodeX[node], grid.nodeY[node]);
+        })
+        ctx.stroke();
+    }
 }
 
 function _drawGridActive(nodeIndex?: number) {

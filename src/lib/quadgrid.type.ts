@@ -15,6 +15,11 @@ export interface iQuadGrid {
     nodesLevel: Int8Array,
     nodesTaken: Int8Array,
     nodesCovered: Int8Array,
+
+    nodeAnchor: number,
+
+    nodeOfPoint: (nodeIndex: number, x: number, y: number) => number,
+    neighbours: (nodeIndex: number) => number[],
 }
 
 export type iBound = number[];  // mx, my, hw, hh,

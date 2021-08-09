@@ -1,12 +1,14 @@
 import {QuadGrid} from "./lib/quadgrid";
 import {iBound} from "./lib/quadgrid.type";
 import {makeRects} from "./demoUtil";
+import {QuadPath} from "./lib/quadpath";
 
 const width = 1600, height = 1200;
 const min = 5, max = 20;
 
 
 const grid = (window as any).grid = new QuadGrid(width, height, min);
+const path = (window as any).path = new QuadPath({finderConfig: {quadGrid: grid}})
 
 /*
 * states
@@ -58,14 +60,13 @@ canvas.addEventListener("mouseout", function (e) {
 * quadtree util
 * */
 
-(window as any).addNodes = function(amount: number, large = false) {
+(window as any).addNodes = function (amount: number, large = false) {
     const rects = states.rects = makeRects(width, height, min, max, amount, large)
     grid.reset();
     const duration = grid.insertBatch(rects)
     console.log(`add ${amount} duration`, duration)
     console.log(`allNodes`, grid.nodeAnchor);
 }
-
 
 
 /*
@@ -79,7 +80,7 @@ function _updateUI() {
     if (states.focusActive) {
         const nodeOfPoint = grid.nodeOfPoint(0, states.focus[0], states.focus[1]);
         // console.log(states.focus, grid.nodeX[nodeOfPoint], grid.nodeY[nodeOfPoint], grid.nodeW[nodeOfPoint], grid.nodeH[nodeOfPoint], grid.nodesLevel[nodeOfPoint])
-        grid.nodesTaken[nodeOfPoint] === 0 && grid.neighbour(nodeOfPoint).forEach(neighbourIndex => {
+        grid.nodesTaken[nodeOfPoint] === 0 && grid.neighbours(nodeOfPoint).forEach(neighbourIndex => {
             states.neighbours.add(neighbourIndex);
         })
     }
@@ -114,7 +115,8 @@ function _drawGridNodes(nodeIndex?: number) {
         for (let i = 0; i < 4; i++) {
             _drawGridNodes(grid.nodesRef[boundOffset + i])
         }
-    } else {if (!grid.nodesTaken[nodeIndex]) {
+    } else {
+        if (!grid.nodesTaken[nodeIndex]) {
             ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
             // @ts-ignore
             ctx.strokeRect(..._getBound(nodeIndex))

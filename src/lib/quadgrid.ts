@@ -226,7 +226,7 @@ export class QuadGrid implements iQuadGrid {
     }
 
 
-    neighbour(nodeIndex: number): number[] {
+    neighbours(nodeIndex: number): number[] {
         const extraBound = this.cellMinSize / 2;
         const rx = this.nodeX[nodeIndex],
             ry = this.nodeY[nodeIndex],

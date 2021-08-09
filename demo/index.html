@@ -7,19 +7,17 @@
 
 </head>
 <body>
-<div class="view">
-	<canvas id="canvas"></canvas>
-</div>
 
 <div class="info">
-	Object Count: <span id="info_count">0</span><br>
+	Object Count: <span id="info_count">0</span>
 	Object Involved: <span id="info_involved">0</span>
-</div>
-<div class="btns">
 	<button id="btn_add" onclick="addNodes(1, false)">add small object</button>
 	<button id="btn_add_large" onclick="addNodes(1, true)">add big object</button>
-	<button id="btn_add_100" onclick="addNodes(100)">add 100 small bounds</button>
+	<button id="btn_add_100" onclick="addNodes(200)">add 200 small bounds</button>
 	<button id="btn_add_1000" onclick="addNodes(1000)">add 1000 small bounds</button>
+</div>
+<div class="view">
+	<canvas id="canvas"></canvas>
 </div>
 
 <script type="module" src="./demo.bundle.js"></script>

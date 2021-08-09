@@ -2,13 +2,19 @@ import {QuadGrid} from "./lib/quadgrid";
 import {iBound} from "./lib/quadgrid.type";
 import {makeRects} from "./demoUtil";
 import {QuadPath} from "./lib/quadpath";
+import {eQuadPathHeuristic} from "./lib/aStar.type";
 
-const width = 1600, height = 1200;
-const min = 5, max = 20;
+const width = 1280, height = 1280;
+const min = 2, max = 10;
 
 
 const grid = (window as any).grid = new QuadGrid(width, height, min);
-const path = (window as any).path = new QuadPath({finderConfig: {quadGrid: grid}})
+const path = (window as any).path = new QuadPath({
+    finderConfig: {
+        quadGrid: grid,
+        heuristic: eQuadPathHeuristic.manhattan,
+    }
+})
 
 /*
 * states
@@ -18,7 +24,7 @@ const states = {
     focus: [0, 0],
     focusActive: false,
     neighbours: new Set(),
-    pathFrom: [1,1],
+    pathFrom: [1, 1],
     pathTo: undefined,
     path: undefined,
 }
@@ -42,10 +48,14 @@ canvas.addEventListener("mousemove", function (e: any) {
         e.offsetX = e.layerX - e.target.offsetLeft;
         e.offsetY = e.layerY - e.target.offsetTop;
     }
-    states.focus = states.pathTo = [e.offsetX, e.offsetY];
+    states.focus = [e.offsetX, e.offsetY];
+    const nodeIndex = grid.nodeOfPoint(0, e.offsetX, e.offsetY);
+    states.pathTo = [grid.nodeX[nodeIndex], grid.nodeY[nodeIndex]];
 
-    if (states.rects.length > 0) {
-        states.path = path.findPath(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid);
+    const lastNodeInPath = states.path && states.path[states.path.length - 1];
+    if (states.rects.length > 0 && lastNodeInPath !== nodeIndex) {
+        console.log(`node ${nodeIndex}, x ${grid.nodeX[nodeIndex]}, y ${grid.nodeY[nodeIndex]}, w ${grid.nodeW[nodeIndex]}, h ${grid.nodeH[nodeIndex]}`);
+        states.path = path.findPath(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid, 5);
     }
 });
 canvas.addEventListener("mouseout", function (e) {

@@ -1,4 +1,4 @@
-import {eDiagonalMovement, iAStar, iAStarProps} from "./aStar.type";
+import {iAStar, iAStarProps} from "./aStar.type";
 import {iQuadGrid} from "./quadgrid.type";
 
 var Heap = require('./aStarHeap');
@@ -14,34 +14,16 @@ export class AStarFinder implements iAStar {
     protected _parentArray: Int32Array;
     protected _heuristic: any;
     protected _weight: number;
-    protected _diagonalMovement: eDiagonalMovement;
 
     constructor(opt: iAStarProps) {
         this._quadGrid = opt.quadGrid;
         this._heuristic = Heuristic[opt.heuristic] || Heuristic.manhattan;
         this._weight = opt.weight || 1;
-        this._diagonalMovement = opt.diagonalMovement;
-
-        if (!this._diagonalMovement) {
-            this._diagonalMovement = eDiagonalMovement.IfAtMostOneObstacle;
-        }
-
-        // When diagonal movement is allowed the manhattan heuristic is not
-        //admissible. It should be octile instead
-        if (this._diagonalMovement === eDiagonalMovement.Never) {
-            this._heuristic = Heuristic[opt.heuristic] || Heuristic.manhattan;
-        } else {
-            this._heuristic = Heuristic[opt.heuristic] || Heuristic.octile;
-        }
     }
 
 
     _nodeOfPoint(x: number, y: number): number {
         return this._quadGrid.nodeOfPoint(0, x, y);
-    }
-
-    _nodeNeighbours(nodeIndex: number): number[] {
-        return this._quadGrid.neighbours(nodeIndex);
     }
 
     _nodeX(nodeIndex: number): number {
@@ -81,20 +63,23 @@ export class AStarFinder implements iAStar {
         return path.reverse();
     }
 
-    findPath(sx, sy, ex, ey, grid): number[] {
-        console.log(this._parentArray?.length, grid.nodeAnchor)
+    findPath(sx, sy, ex, ey, grid, collideRadius?: number): number[] {
         this._initGrid(grid);
         this._resetStatus();
         let openList = new Heap((nodeA, nodeB) => {
                 return this._fArray[nodeA] - this._fArray[nodeB];
             }),
             startNode = this._nodeOfPoint(sx, sy),
-            endNode = this._nodeOfPoint(ex, ey),
-            heuristic = this._heuristic,
-            diagonalMovement = this._diagonalMovement,
+            endNode = this._nodeOfPoint(ex, ey);
+
+        if (this._quadGrid.nodesTaken[startNode] || this._quadGrid.nodesTaken[endNode]) {
+            return [];
+        }
+
+        let heuristic = this._heuristic,
             weight = this._weight,
             abs = Math.abs, SQRT2 = Math.SQRT2,
-            node: number, neighbors: number[], neighbor: number, i, l, x, y, ng;
+            node: number, neighbors: number[], neighbor: number, i, l, x, y, nx, ny, ng;
 
         // set the `g` and `f` value of the start node to be 0
         this._gArray[startNode] = 0;
@@ -116,8 +101,10 @@ export class AStarFinder implements iAStar {
             }
 
             // get neigbours of the current node
-            // neighbors = this.nodeNeighbours(node, diagonalMovement);    // todo
-            neighbors = this._nodeNeighbours(node);
+            if (this._quadGrid.nodeW[node] < collideRadius || this._quadGrid.nodeH[node] < collideRadius) {
+                continue;
+            }
+            neighbors = this._quadGrid.neighbours(node);
             for (i = 0, l = neighbors.length; i < l; ++i) {
                 neighbor = neighbors[i];
 
@@ -125,29 +112,31 @@ export class AStarFinder implements iAStar {
                     continue;
                 }
 
-                x = this._nodeX(neighbor);
-                y = this._nodeY(neighbor);
+                x = this._nodeX(node);
+                y = this._nodeY(node)
+                nx = this._nodeX(neighbor);
+                ny = this._nodeY(neighbor);
 
                 // get the distance between current node and the neighbor
                 // and calculate the next g score
-                ng = this._gArray[node] + ((x - this._nodeX(node) === 0 || y - this._nodeY(node) === 0) ? 1 : SQRT2);
-
+                ng = this._gArray[node] + Math.sqrt((x - nx) * (x - nx) + (y - ny) * (y - ny));
+                // ng = this._gArray[node] + ((x - this._nodeX(node) === 0 || y - this._nodeY(node) === 0) ? 1 : SQRT2);
                 // check if the neighbor has not been inspected yet, or
                 // can be reached with smaller cost from the current node
                 if (!this._openedArray[neighbor] || ng < this._gArray[neighbor]) {
                     this._gArray[neighbor] = ng;
-                    this._hArray[neighbor] = this._hArray[neighbor] || weight * heuristic(abs(x - ex), abs(y - ey));
+                    this._hArray[neighbor] = this._hArray[neighbor] || weight * heuristic(abs(nx - ex), abs(ny - ey));
                     this._fArray[neighbor] = this._gArray[neighbor] + this._hArray[neighbor];
                     this._parentArray[neighbor] = node;
 
-                    if (!this._openedArray[neighbor]) {
-                        openList.push(neighbor);
-                        this._openedArray[neighbor] = 1;
-                    } else {
+                    if (this._openedArray[neighbor]) {
                         // the neighbor can be reached with smaller cost.
                         // Since its f value has been updated, we have to
                         // update its position in the open list
                         openList.updateItem(neighbor);
+                    } else {
+                        openList.push(neighbor);
+                        this._openedArray[neighbor] = 1;
                     }
                 }
             } // end for each neighbor

@@ -213,7 +213,9 @@ export class QuadGrid implements iQuadGrid {
         const indexOfRect = this.indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
         if (indexOfRect > 0) {
             if (this.nodesRef[indexOffset] === 0) {
-                this.nodesTaken[nodeIndex] === 0 && neighboursIndex.push(nodeIndex);
+                if (this.nodesTaken[nodeIndex] === 0) {
+                    neighboursIndex.push(nodeIndex)
+                }
             } else {
                 indexOfRect & 0b1 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset], rx, ry, rw, rh);
                 indexOfRect & 0b10 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 1], rx, ry, rw, rh);

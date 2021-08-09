@@ -64,13 +64,20 @@ export class AStarFinder implements iAStar {
     }
 
     findPath(sx, sy, ex, ey, grid, collideRadius?: number): number[] {
+        const startNode = this._nodeOfPoint(sx, sy),
+            endNode = this._nodeOfPoint(ex, ey);
+        if (collideRadius) {
+            const sqrtRadius = Math.sqrt(collideRadius);
+            if (this._quadGrid.nodeW[endNode] <= sqrtRadius || this._quadGrid.nodeH[endNode] <= sqrtRadius) {
+                return [];
+            }
+        }
+
         this._initGrid(grid);
         this._resetStatus();
         let openList = new Heap((nodeA, nodeB) => {
                 return this._fArray[nodeA] - this._fArray[nodeB];
-            }),
-            startNode = this._nodeOfPoint(sx, sy),
-            endNode = this._nodeOfPoint(ex, ey);
+            });
 
         if (this._quadGrid.nodesTaken[startNode] || this._quadGrid.nodesTaken[endNode]) {
             return [];
@@ -101,15 +108,22 @@ export class AStarFinder implements iAStar {
             }
 
             // get neigbours of the current node
-            if (this._quadGrid.nodeW[node] < collideRadius || this._quadGrid.nodeH[node] < collideRadius) {
-                continue;
-            }
             neighbors = this._quadGrid.neighbours(node);
             for (i = 0, l = neighbors.length; i < l; ++i) {
                 neighbor = neighbors[i];
 
                 if (this._closedArray[neighbor]) {
                     continue;
+                }
+
+                if (collideRadius && this._quadGrid.neighbourCollideCheck(neighbor, collideRadius)) {
+                    if (neighbor === endNode) {
+                            const path = this._backtrace(node);
+                            path.push(endNode);
+                            return path;
+                    } else {
+                        continue;
+                    }
                 }
 
                 x = this._nodeX(node);

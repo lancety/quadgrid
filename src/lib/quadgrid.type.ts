@@ -19,7 +19,8 @@ export interface iQuadGrid {
     nodeAnchor: number,
 
     nodeOfPoint: (nodeIndex: number, x: number, y: number) => number,
-    neighbours: (nodeIndex: number) => number[],
+    neighbours: (nodeIndex: number, collideRadius?: number) => number[],
+    neighbourCollideCheck: (nodeIndex: number, collideRadius?: number) => boolean,
 }
 
 export type iBound = number[];  // mx, my, hw, hh,

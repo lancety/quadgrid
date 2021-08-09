@@ -22,7 +22,7 @@ export class QuadPath {
      */
     public findPath(sx, sy, es, ey, grid: iQuadGrid, collideRadius?: number): number[] {
         const start = typeof performance === "undefined" ? Date.now() : performance.now();
-        const path = this._finder.findPath(sx, sy, es, ey, grid, collideRadius / Math.SQRT2);
+        const path = this._finder.findPath(sx, sy, es, ey, grid, collideRadius);
         console.log("findPath takes", typeof performance === "undefined" ? Date.now() : performance.now() - start);
 
         return path;

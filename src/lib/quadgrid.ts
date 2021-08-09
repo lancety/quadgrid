@@ -208,19 +208,34 @@ export class QuadGrid implements iQuadGrid {
         }
     }
 
-    neighbourQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh): number[] {
+    /**
+     *
+     * @param {number[]} neighboursIndex
+     * @param nodeIndex
+     * @param rx
+     * @param ry
+     * @param rw
+     * @param rh
+     * @param {number} collideRadius if > 0 - with blocker neighbour, neighboursIndex[-1] = 1
+     * @returns {number[]}
+     */
+    neighbourQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, collideRadius?: number): number[] {
         const indexOffset = nodeIndex * 4;
         const indexOfRect = this.indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
         if (indexOfRect > 0) {
             if (this.nodesRef[indexOffset] === 0) {
                 if (this.nodesTaken[nodeIndex] === 0) {
                     neighboursIndex.push(nodeIndex)
+                } else {
+                    if (collideRadius) {
+                        neighboursIndex[-1] = 1;
+                    }
                 }
             } else {
-                indexOfRect & 0b1 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset], rx, ry, rw, rh);
-                indexOfRect & 0b10 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 1], rx, ry, rw, rh);
-                indexOfRect & 0b100 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 2], rx, ry, rw, rh);
-                indexOfRect & 0b1000 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 3], rx, ry, rw, rh);
+                indexOfRect & 0b1 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset], rx, ry, rw, rh, collideRadius);
+                indexOfRect & 0b10 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 1], rx, ry, rw, rh, collideRadius);
+                indexOfRect & 0b100 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 2], rx, ry, rw, rh, collideRadius);
+                indexOfRect & 0b1000 && this.neighbourQuery(neighboursIndex, this.nodesRef[indexOffset + 3], rx, ry, rw, rh, collideRadius);
             }
         }
 
@@ -228,14 +243,29 @@ export class QuadGrid implements iQuadGrid {
     }
 
 
-    neighbours(nodeIndex: number): number[] {
+    neighbours(nodeIndex: number, collideRadius?: number): number[] {
         const extraBound = this.cellMinSize / 2;
         const rx = this.nodeX[nodeIndex],
-            ry = this.nodeY[nodeIndex],
-            rw = this.nodeW[nodeIndex] + extraBound,
+            ry = this.nodeY[nodeIndex];
+        let rw, rh;
+        if (collideRadius) {
+            rw = collideRadius;
+            rh = collideRadius;
+        } else {
+            rw = this.nodeW[nodeIndex] + extraBound;
             rh = this.nodeH[nodeIndex] + extraBound;
+        }
         const topParent = this.neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
-        return this.neighbourQuery([], topParent, rx, ry, rw, rh);
+        return this.neighbourQuery([], topParent, rx, ry, rw, rh, collideRadius);
+    }
+
+    neighbourCollideCheck(nodeIndex: number, collideRadius?: number): boolean {
+        if (this.nodeW[nodeIndex] >= collideRadius && this.nodeH[nodeIndex] >= collideRadius) {
+            return false;
+        } else {
+            const neighboursCollideCheck = this.neighbours(nodeIndex, collideRadius);
+            return neighboursCollideCheck[-1] === 1;
+        }
     }
 
 

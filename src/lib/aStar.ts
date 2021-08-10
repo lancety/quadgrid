@@ -130,15 +130,14 @@ export class AStarFinder implements iAStar {
                     continue;
                 }
 
-                // if same level nodes pass through shared corner, check
-                // - same or smaller neighbour at corner -> if all cross neighbour is
+                // level is opposite value, smaller value means upper level - bigger
                 let isCross = false;
-                if (level > nlevel) {
+                if (level < nlevel) {
                     // small neighbour cell is outside of big node cell
                     const sx = x - w, ex = x + w,
                         sy = y - h, ey = y + h;
                     isCross = (nx < sx - 1 || nx > ex + 1) && (ny < sy - 1 || ny > ey + 1);
-                } else if (level < nlevel) {
+                } else if (level > nlevel) {
                     // small node cell is outside of big neighbour cell
                     const sx = nx - nw, ex = nx + nw,
                         sy = ny - nh, ey = ny + nh;
@@ -170,12 +169,15 @@ export class AStarFinder implements iAStar {
                         return path;
                     }
 
-                    // todo - check twinCells will be done at here
-
-                    if (level > nlevel && nw >= minNeighbourRadius && nh >= minNeighbourRadius){
-                        // neighbour is smaller
+                    if (level < nlevel && nw >= minNeighbourRadius && nh >= minNeighbourRadius && nw < collideRadius && nh < collideRadius){
+                        // if (nx ) {
+                        //     // x direction have twin cells
+                        // } else if () {
+                        //     // y direction have twin cells
+                        // }
                     }
-                    if (nw < collideRadius || nw < collideRadius) {
+
+                    if (nw < collideRadius || nh < collideRadius) {
                         continue;  // if 2 cells are are not big enough
                     }
                 }

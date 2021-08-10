@@ -63,12 +63,17 @@ export class AStarFinder implements iAStar {
         return path.reverse();
     }
 
-    ps(sx, sy, ex, ey, grid, collideRadius?: number): number[] {
-        const startNode = this._nodeOfPoint(sx, sy),
-            endNode = this._nodeOfPoint(ex, ey);
+    ps(sx, sy, ex, ey, grid: iQuadGrid, collideRadius?: number): number[] {
+        const startNode = this._nodeOfPoint(sx, sy);
+        let endNode = this._nodeOfPoint(ex, ey);
         const minNeighbourRadius = collideRadius ? collideRadius / 2 : 0;
-        if (collideRadius && this._quadGrid.nbc(endNode, collideRadius)) {
-            return [];
+
+        // if target node is very small, then look for larger neighbour (x2 at least >= minNeighbourRadius)
+        if (minNeighbourRadius && (grid.ws[endNode] < minNeighbourRadius || grid.hs[endNode] < minNeighbourRadius)) {
+            const nbs = grid.nbs(endNode,minNeighbourRadius);
+            if (!nbs) return [];
+            endNode = nbs.find(n => grid.ws[n] >= minNeighbourRadius && grid.hs[n] >= minNeighbourRadius);
+            if (!endNode) return [];
         }
 
         this._initGrid(grid);
@@ -123,16 +128,6 @@ export class AStarFinder implements iAStar {
                     continue;
                 }
 
-                if (collideRadius && this._quadGrid.nbc(neighbour, collideRadius)) {
-                    if (neighbour === endNode) {
-                        const path = this._backtrace(node);
-                        path.push(endNode);
-                        return path;
-                    } else {
-                        continue;
-                    }
-                }
-
                 // if same level nodes pass through shared corner, check
                 // - same or smaller neighbour at corner -> if all cross neighbour is
                 let checkCross = false;
@@ -140,8 +135,7 @@ export class AStarFinder implements iAStar {
                     const sx = x - w, ex = x + w,
                         sy = y - h, ey = y + h;
                     checkCross = (nx < sx - 1 || nx > ex + 1) && (ny < sy - 1 || ny > ey + 1);
-                }
-                else {
+                } else {
                     checkCross = x !== nx && y !== ny;  // neighbour is corner of this node
                 }
                 if (checkCross) {
@@ -150,14 +144,20 @@ export class AStarFinder implements iAStar {
                     const crossNodes = this._quadGrid.nbq([], 0,
                         jointX,
                         jointY,
-                        2,
-                        2
+                        minNeighbourRadius,
+                        minNeighbourRadius,
                     )
 
                     const blocked = crossNodes.find(neighbour => {
-                        return this._quadGrid.ws[neighbour] < collideRadius || this._quadGrid.hs[neighbour] < collideRadius;
+                        return this._quadGrid.ws[neighbour] < minNeighbourRadius || this._quadGrid.hs[neighbour] < minNeighbourRadius;
                     })
                     if (blocked) continue;
+                } else {
+                    // todo - check twinCells will be done at here
+
+                    if (this._quadGrid.ws[neighbour] < collideRadius || this._quadGrid.hs[neighbour] < collideRadius) {
+                        continue;
+                    }
                 }
 
                 // get the distance between current node and the neighbor

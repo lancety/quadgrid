@@ -19,7 +19,7 @@ const path = (window as any).path = new QuadPath({
 /*
 * states
 * */
-const states = {
+const states = (window as any).states = {
     rects: [] as iBound[],
     focus: [0, 0],
     focusActive: false,
@@ -41,7 +41,7 @@ const ctx = (canvas as HTMLCanvasElement).getContext('2d');
 
 
 /*
-* mouse event
+* event
 * */
 canvas.addEventListener("mousemove", function (e: any) {
     states.focusActive = true;
@@ -73,9 +73,23 @@ canvas.addEventListener("mouseout", function (e) {
     window.requestAnimationFrame(render);
 })();
 
+/*
+* util
+* */
+(window as any).randomFrom = function() {
+    let newFrom = false;
+    while (!newFrom) {
+        states.pathFrom[0] = Math.random() * width;
+        states.pathFrom[1] = Math.random() * height;
+        const isBlocker = grid.ts[grid.np(0, states.pathFrom[0], states.pathFrom[1])];
+        if (isBlocker === 0) {
+            newFrom = true;
+        }
+    }
+};
 
 /*
-* quadtree util
+* quadtree
 * */
 
 (window as any).addNodes = function (amount: number, large = false) {
@@ -87,7 +101,7 @@ canvas.addEventListener("mouseout", function (e) {
 
 
 /*
-* render util
+* render
 * */
 function _updateUI() {
     ctx.clearRect(0, 0, width, height);
@@ -104,11 +118,22 @@ function _updateUI() {
         _drawPath();
     }
 
+    _drawFrom();
+
     // draw grid
     _drawGridActive();
     _drawGridNodes();
     _drawGridTaken();
     _drawGridTakenStroke();
+}
+
+function _drawFrom() {
+    if (states.pathFrom) {
+        ctx.beginPath();
+        ctx.fillStyle = "rgb(205,25,44)";
+        ctx.arc(states.pathFrom[0], states.pathFrom[1], 10, 0, 360);
+        ctx.fill();
+    }
 }
 
 function _drawPath() {

@@ -210,7 +210,7 @@ export class QuadGrid implements iQuadGrid {
     }
 
     /**
-     *
+     * neighboursQuery
      * @param {number[]} neighboursIndex
      * @param nodeIndex
      * @param rx
@@ -220,7 +220,7 @@ export class QuadGrid implements iQuadGrid {
      * @param minNeighbourRadius  min half size (radius) will be considered as a neighbour
      * @returns {number[]}
      */
-    private _neighbourQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, minNeighbourRadius = 0): number[] {
+    nbq(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, minNeighbourRadius = 0): number[] {
         if (minNeighbourRadius && (this.ws[nodeIndex] < minNeighbourRadius || this.hs[nodeIndex] < minNeighbourRadius)) {
             return;
         }
@@ -233,10 +233,10 @@ export class QuadGrid implements iQuadGrid {
                     neighboursIndex.push(nodeIndex)
                 }
             } else {
-                indexOfRect & 0b1 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset], rx, ry, rw, rh, minNeighbourRadius);
-                indexOfRect & 0b10 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset + 1], rx, ry, rw, rh, minNeighbourRadius);
-                indexOfRect & 0b100 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset + 2], rx, ry, rw, rh, minNeighbourRadius);
-                indexOfRect & 0b1000 && this._neighbourQuery(neighboursIndex, this.ms[indexOffset + 3], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b1 && this.nbq(neighboursIndex, this.ms[indexOffset], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b10 && this.nbq(neighboursIndex, this.ms[indexOffset + 1], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b100 && this.nbq(neighboursIndex, this.ms[indexOffset + 2], rx, ry, rw, rh, minNeighbourRadius);
+                indexOfRect & 0b1000 && this.nbq(neighboursIndex, this.ms[indexOffset + 3], rx, ry, rw, rh, minNeighbourRadius);
             }
         }
 
@@ -251,7 +251,7 @@ export class QuadGrid implements iQuadGrid {
         const rw = this.ws[nodeIndex] + extraBound;
         const rh = this.hs[nodeIndex] + extraBound;
         const topParent = this._neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
-        return this._neighbourQuery([], topParent, rx, ry, rw, rh, minNeighbourRadius);
+        return this.nbq([], topParent, rx, ry, rw, rh, minNeighbourRadius);
     }
 
     private _neighbourCollideQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh): number[] {

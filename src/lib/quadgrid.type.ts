@@ -19,6 +19,7 @@ export interface iQuadGrid {
     a: number,
 
     np: (nodeIndex: number, x: number, y: number) => number,
+    nbq: (neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, minNeighbourRadius?: number) => number[],
     nbs: (nodeIndex: number, minNeightbourRadius?: number) => number[],
     nbc: (nodeIndex: number, collideRadius: number) => boolean,
 }

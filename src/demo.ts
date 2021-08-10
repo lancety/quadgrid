@@ -116,8 +116,8 @@ function _drawPath() {
         ctx.strokeStyle = "rgb(251,255,0)";
         ctx.beginPath();
         ctx.moveTo(states.pathFrom[0], states.pathFrom[1]);
-        states.path.forEach(node => {
-            ctx.lineTo(grid.xs[node], grid.ys[node]);
+        states.path.forEach(coord => {
+            ctx.lineTo(coord[0], coord[1]);
         })
         ctx.stroke();
     }

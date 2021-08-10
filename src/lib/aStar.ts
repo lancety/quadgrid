@@ -128,12 +128,6 @@ export class AStarFinder implements iAStar {
                     continue;
                 }
 
-                if (neighbour === endNode) {
-                    const path = this._backtrace(node);
-                    path.push(endNode);
-                    return path;
-                }
-
                 // if same level nodes pass through shared corner, check
                 // - same or smaller neighbour at corner -> if all cross neighbour is
                 let isCross = false;
@@ -168,15 +162,20 @@ export class AStarFinder implements iAStar {
                     })
                     if (blocked) continue;
                 } else {
+                    if (neighbour === endNode) {
+                        const path = this._backtrace(node);
+                        path.push(endNode);
+                        return path;
+                    }
+
                     // todo - check twinCells will be done at here
 
-                    if (this._quadGrid.ws[neighbour] >= collideRadius && this._quadGrid.hs[neighbour] >= collideRadius) {
-                        // dont do anything if 2 cells are both big enough
-                    } else if (this._quadGrid.nbc(neighbour, collideRadius) === false) {
-                        // dont do anything if neighbour wont collide with anything when body move there
+                    if (this._quadGrid.ws[neighbour] < collideRadius || this._quadGrid.hs[neighbour] < collideRadius) {
+                        continue;  // if 2 cells are are not big enough
+                    } else if (this._quadGrid.nbc(neighbour, collideRadius)) {
+                        continue;  // if neighbour collide with anything when body move there
                     } else {
-                        // above case happened, ignore neighbour
-                        continue;
+
                     }
                 }
 

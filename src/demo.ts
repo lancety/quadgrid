@@ -55,7 +55,7 @@ canvas.addEventListener("mousemove", function (e: any) {
     const lastNodeInPath = states.path && states.path[states.path.length - 1];
     if (states.rects.length > 0 && lastNodeInPath !== nodeIndex) {
         console.log(`node ${nodeIndex}, x ${grid.xs[nodeIndex]}, y ${grid.ys[nodeIndex]}, w ${grid.ws[nodeIndex]}, h ${grid.hs[nodeIndex]}`);
-        states.path = path.ps(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid, 19);
+        states.path = path.ps(states.pathFrom[0], states.pathFrom[1], states.pathTo[0], states.pathTo[1], grid, 20);
     }
 });
 canvas.addEventListener("mouseout", function (e) {

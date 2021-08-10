@@ -243,7 +243,7 @@ export class QuadGrid implements iQuadGrid {
         return neighboursIndex;
     }
 
-
+    // neighbours
     nbs(nodeIndex: number, minNeighbourRadius = 0): number[] {
         const extraBound = this.cellMinSize / 2;
         const rx = this.xs[nodeIndex],
@@ -275,6 +275,7 @@ export class QuadGrid implements iQuadGrid {
         return neighboursIndex;
     }
 
+    // neighbourCollide
     nbc(nodeIndex: number, collideRadius = 0): boolean {
         if (this.ws[nodeIndex] >= collideRadius && this.hs[nodeIndex] >= collideRadius) {
             return false;
@@ -289,6 +290,7 @@ export class QuadGrid implements iQuadGrid {
         return neighboursCollideCheck[-1] === 1;
     }
 
+    // nodeOfPoint
     np(nodeIndex: number, x: number, y: number): number {
         const indexOffset = nodeIndex * 4;
         if (this.ms[indexOffset] === 0) {

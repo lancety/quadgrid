@@ -85,7 +85,7 @@ export class AStarFinder implements iAStar {
         let heuristic = this._heuristic,
             weight = this._weight,
             abs = Math.abs, SQRT2 = Math.SQRT2,
-            node: number, neighbors: number[], neighbor: number, i, l, x, y, nx, ny, ng;
+            node: number, neighbors: number[], neighbour: number, i, l, x, y, nx, ny, ng;
 
         // set the `g` and `f` value of the start node to be 0
         this._gArray[startNode] = 0;
@@ -109,14 +109,14 @@ export class AStarFinder implements iAStar {
             // get neigbours of the current node
             neighbors = this._quadGrid.nbs(node, minNeighbourRadius);
             for (i = 0, l = neighbors.length; i < l; ++i) {
-                neighbor = neighbors[i];
+                neighbour = neighbors[i];
 
-                if (this._closedArray[neighbor]) {
+                if (this._closedArray[neighbour]) {
                     continue;
                 }
 
-                if (collideRadius && this._quadGrid.nbc(neighbor, collideRadius)) {
-                    if (neighbor === endNode) {
+                if (collideRadius && this._quadGrid.nbc(neighbour, collideRadius)) {
+                    if (neighbour === endNode) {
                             const path = this._backtrace(node);
                             path.push(endNode);
                             return path;
@@ -125,12 +125,17 @@ export class AStarFinder implements iAStar {
                     }
                 }
 
-                // todo if 2 same level nodes, not tblr direction, then check corner if safe to pass.
+                // if same level nodes pass through shared corner, check
+                // - todo - find a way to check no collition throw the path between 2 node;
+                // - else - ignore the same level neighbour
+                if (this._quadGrid.ls[node] === this._quadGrid.ls[neighbour] && this._nodeX(node) !== this._nodeX(neighbour) && this._nodeY(node) !== this._nodeY(neighbour)) {
+                    continue;
+                }
 
                 x = this._nodeX(node);
                 y = this._nodeY(node)
-                nx = this._nodeX(neighbor);
-                ny = this._nodeY(neighbor);
+                nx = this._nodeX(neighbour);
+                ny = this._nodeY(neighbour);
 
                 // get the distance between current node and the neighbor
                 // and calculate the next g score
@@ -138,20 +143,20 @@ export class AStarFinder implements iAStar {
                 // ng = this._gArray[node] + ((x - this._nodeX(node) === 0 || y - this._nodeY(node) === 0) ? 1 : SQRT2);
                 // check if the neighbor has not been inspected yet, or
                 // can be reached with smaller cost from the current node
-                if (!this._openedArray[neighbor] || ng < this._gArray[neighbor]) {
-                    this._gArray[neighbor] = ng;
-                    this._hArray[neighbor] = this._hArray[neighbor] || weight * heuristic(abs(nx - ex), abs(ny - ey));
-                    this._fArray[neighbor] = this._gArray[neighbor] + this._hArray[neighbor];
-                    this._parentArray[neighbor] = node;
+                if (!this._openedArray[neighbour] || ng < this._gArray[neighbour]) {
+                    this._gArray[neighbour] = ng;
+                    this._hArray[neighbour] = this._hArray[neighbour] || weight * heuristic(abs(nx - ex), abs(ny - ey));
+                    this._fArray[neighbour] = this._gArray[neighbour] + this._hArray[neighbour];
+                    this._parentArray[neighbour] = node;
 
-                    if (this._openedArray[neighbor]) {
+                    if (this._openedArray[neighbour]) {
                         // the neighbor can be reached with smaller cost.
                         // Since its f value has been updated, we have to
                         // update its position in the open list
-                        openList.updateItem(neighbor);
+                        openList.updateItem(neighbour);
                     } else {
-                        openList.push(neighbor);
-                        this._openedArray[neighbor] = 1;
+                        openList.push(neighbour);
+                        this._openedArray[neighbour] = 1;
                     }
                 }
             } // end for each neighbor

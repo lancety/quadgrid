@@ -18,5 +18,5 @@ export interface iAStarGrid {
 }
 
 export interface iAStar {
-    ps: (sx: number, sy: number, es: number, ey: number, quadGrid: iQuadGrid, collideRadius?: number) => number[]
+    ps: (sx: number, sy: number, es: number, ey: number, quadGrid: iQuadGrid, collideRadius: number) => number[]
 }

@@ -63,7 +63,7 @@ export class AStarFinder implements iAStar {
         return path.reverse();
     }
 
-    ps(sx, sy, ex, ey, grid: iQuadGrid, collideRadius?: number): number[] {
+    ps(sx, sy, ex, ey, grid: iQuadGrid, collideRadius: number): number[] {
         const startNode = this._nodeOfPoint(sx, sy);
         let endNode = this._nodeOfPoint(ex, ey);
         const minNeighbourRadius = collideRadius ? collideRadius / 2 : 0;
@@ -128,6 +128,12 @@ export class AStarFinder implements iAStar {
                     continue;
                 }
 
+                if (neighbour === endNode) {
+                    const path = this._backtrace(node);
+                    path.push(endNode);
+                    return path;
+                }
+
                 // if same level nodes pass through shared corner, check
                 // - same or smaller neighbour at corner -> if all cross neighbour is
                 let checkCross = false;
@@ -141,15 +147,16 @@ export class AStarFinder implements iAStar {
                 if (checkCross) {
                     const jointX = nx > x ? x + w : x - w;
                     const jointY = ny > y ? y + h : y - h;
+                    const checkSize = minNeighbourRadius * Math.SQRT2;
                     const crossNodes = this._quadGrid.nbq([], 0,
                         jointX,
                         jointY,
-                        minNeighbourRadius,
-                        minNeighbourRadius,
+                        checkSize,
+                        checkSize,
                     )
 
                     const blocked = crossNodes.find(neighbour => {
-                        return this._quadGrid.ws[neighbour] < minNeighbourRadius || this._quadGrid.hs[neighbour] < minNeighbourRadius;
+                        return this._quadGrid.ws[neighbour] < checkSize || this._quadGrid.hs[neighbour] < checkSize;
                     })
                     if (blocked) continue;
                 } else {

@@ -138,7 +138,7 @@ export class AStarFinder implements iAStar {
                 let checkCross = false;
                 if (this._quadGrid.ls[node] !== this._quadGrid.ls[neighbour]) {
                     const sx = x - w, ex = x + w,
-                        sy = y - h, ey = y - h;
+                        sy = y - h, ey = y + h;
                     checkCross = (nx < sx - 1 || nx > ex + 1) && (ny < sy - 1 || ny > ey + 1);
                 }
                 else {
@@ -162,13 +162,15 @@ export class AStarFinder implements iAStar {
 
                 // get the distance between current node and the neighbor
                 // and calculate the next g score
-                ng = this._gArray[node] + Math.sqrt((x - nx) * (x - nx) + (y - ny) * (y - ny));
-                // ng = this._gArray[node] + ((x - this._nodeX(node) === 0 || y - this._nodeY(node) === 0) ? 1 : SQRT2);
+                ng = this._gArray[node] + heuristic(nx < x ? x - nx : nx - x, ny < y ? y - ny : ny - y);
+                // ng = this._gArray[node] + Math.sqrt((x - nx) * (x - nx) + (y - ny) * (y - ny));
+
                 // check if the neighbor has not been inspected yet, or
                 // can be reached with smaller cost from the current node
                 if (!this._openedArray[neighbour] || ng < this._gArray[neighbour]) {
                     this._gArray[neighbour] = ng;
-                    this._hArray[neighbour] = this._hArray[neighbour] || weight * Math.sqrt((ex - nx) * (ex - nx) + (ey - ny) * (ey - ny));
+                    this._hArray[neighbour] = this._hArray[neighbour] || weight * heuristic(nx < ex ? ex - nx : nx - ex, ny < ey ? ey - ny : ny - ey);
+                    // this._hArray[neighbour] = this._hArray[neighbour] || weight * Math.sqrt((ex - nx) * (ex - nx) + (ey - ny) * (ey - ny));
                     this._fArray[neighbour] = this._gArray[neighbour] + this._hArray[neighbour];
                     this._parentArray[neighbour] = node;
 

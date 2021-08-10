@@ -89,7 +89,7 @@ export class AStarFinder implements iAStar {
         let heuristic = this._heuristic,
             weight = this._weight,
             abs = Math.abs, SQRT2 = Math.SQRT2,
-            node: number, neighbors: number[], neighbour: number, i, l, x, y, w, h, nx, ny, nw, nh, ng;
+            node: number, neighbors: number[], neighbour: number, i, l, x, y, w, h, level, nx, ny, nw, nh, ng, nlevel;
 
         // set the `g` and `f` value of the start node to be 0
         this._gArray[startNode] = 0;
@@ -107,6 +107,7 @@ export class AStarFinder implements iAStar {
             y = this._nodeY(node);
             w = this._quadGrid.ws[node];
             h = this._quadGrid.hs[node];
+            level = this._quadGrid.ls[node];
 
             this._closedArray[node] = 1;
 
@@ -123,6 +124,7 @@ export class AStarFinder implements iAStar {
                 ny = this._nodeY(neighbour);
                 nw = this._quadGrid.ws[neighbour];
                 nh = this._quadGrid.hs[neighbour];
+                nlevel = this._quadGrid.ls[neighbour];
 
                 if (this._closedArray[neighbour]) {
                     continue;
@@ -131,12 +133,12 @@ export class AStarFinder implements iAStar {
                 // if same level nodes pass through shared corner, check
                 // - same or smaller neighbour at corner -> if all cross neighbour is
                 let isCross = false;
-                if (this._quadGrid.ls[node] > this._quadGrid.ls[neighbour]) {
+                if (level > nlevel) {
                     // small neighbour cell is outside of big node cell
                     const sx = x - w, ex = x + w,
                         sy = y - h, ey = y + h;
                     isCross = (nx < sx - 1 || nx > ex + 1) && (ny < sy - 1 || ny > ey + 1);
-                } else if (this._quadGrid.ls[node] < this._quadGrid.ls[neighbour]) {
+                } else if (level < nlevel) {
                     // small node cell is outside of big neighbour cell
                     const sx = nx - nw, ex = nx + nw,
                         sy = ny - nh, ey = ny + nh;
@@ -170,12 +172,11 @@ export class AStarFinder implements iAStar {
 
                     // todo - check twinCells will be done at here
 
-                    if (this._quadGrid.ws[neighbour] < collideRadius || this._quadGrid.hs[neighbour] < collideRadius) {
+                    if (level > nlevel && nw >= minNeighbourRadius && nh >= minNeighbourRadius){
+                        // neighbour is smaller
+                    }
+                    if (nw < collideRadius || nw < collideRadius) {
                         continue;  // if 2 cells are are not big enough
-                    } else if (this._quadGrid.nbc(neighbour, collideRadius)) {
-                        continue;  // if neighbour collide with anything when body move there
-                    } else {
-
                     }
                 }
 

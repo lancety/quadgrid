@@ -136,15 +136,22 @@ export class AStarFinder implements iAStar {
 
                 // if same level nodes pass through shared corner, check
                 // - same or smaller neighbour at corner -> if all cross neighbour is
-                let checkCross = false;
-                if (this._quadGrid.ls[node] !== this._quadGrid.ls[neighbour]) {
+                let isCross = false;
+                if (this._quadGrid.ls[node] > this._quadGrid.ls[neighbour]) {
+                    // small neighbour cell is outside of big node cell
                     const sx = x - w, ex = x + w,
                         sy = y - h, ey = y + h;
-                    checkCross = (nx < sx - 1 || nx > ex + 1) && (ny < sy - 1 || ny > ey + 1);
+                    isCross = (nx < sx - 1 || nx > ex + 1) && (ny < sy - 1 || ny > ey + 1);
+                } else if (this._quadGrid.ls[node] < this._quadGrid.ls[neighbour]) {
+                    // small node cell is outside of big neighbour cell
+                    const sx = nx - nw, ex = nx + nw,
+                        sy = ny - nh, ey = ny + nh;
+                    isCross = (x < sx - 1 || x > ex + 1) && (y < sy - 1 || y > ey + 1);
                 } else {
-                    checkCross = x !== nx && y !== ny;  // neighbour is corner of this node
+                    // same size node and neighbour cells are not aligned same x and y direction
+                    isCross = x !== nx && y !== ny;  // neighbour is corner of this node
                 }
-                if (checkCross) {
+                if (isCross) {
                     const jointX = nx > x ? x + w : x - w;
                     const jointY = ny > y ? y + h : y - h;
                     const checkSize = minNeighbourRadius * Math.SQRT2;
@@ -155,17 +162,20 @@ export class AStarFinder implements iAStar {
                         checkSize,
                     )
 
+                    // blocked - if cross cells are smaller than checkSize (gap between 2 cell on left and right)
                     const blocked = crossNodes.find(neighbour => {
                         return this._quadGrid.ws[neighbour] < checkSize || this._quadGrid.hs[neighbour] < checkSize;
                     })
                     if (blocked) continue;
                 } else {
                     // todo - check twinCells will be done at here
+
                     if (this._quadGrid.ws[neighbour] >= collideRadius && this._quadGrid.hs[neighbour] >= collideRadius) {
-                        // dont do anything
+                        // dont do anything if 2 cells are both big enough
                     } else if (this._quadGrid.nbc(neighbour, collideRadius) === false) {
-                        // dont do anything
+                        // dont do anything if neighbour wont collide with anything when body move there
                     } else {
+                        // above case happened, ignore neighbour
                         continue;
                     }
                 }

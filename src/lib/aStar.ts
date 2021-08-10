@@ -161,8 +161,11 @@ export class AStarFinder implements iAStar {
                     if (blocked) continue;
                 } else {
                     // todo - check twinCells will be done at here
-
-                    if (this._quadGrid.ws[neighbour] < collideRadius || this._quadGrid.hs[neighbour] < collideRadius) {
+                    if (this._quadGrid.ws[neighbour] >= collideRadius && this._quadGrid.hs[neighbour] >= collideRadius) {
+                        // dont do anything
+                    } else if (this._quadGrid.nbc(neighbour, collideRadius) === false) {
+                        // dont do anything
+                    } else {
                         continue;
                     }
                 }

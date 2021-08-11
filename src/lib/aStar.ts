@@ -92,6 +92,7 @@ export class AStarFinder implements iAStar {
             node: number, neighbors: number[], neighbour: number,
             i, l, x, y, w, h, level,
             nx, ny, nw, nh, ng, nlevel,
+            bx, by, // the body expected coord x and y
             isCross, isValidNext, refNode, refSmall, refLarge;
 
         // set the `g` and `f` value of the start node to be 0
@@ -160,7 +161,7 @@ export class AStarFinder implements iAStar {
                     const jointX = nx > x ? x + w : x - w;
                     const jointY = ny > y ? y + h : y - h;
                     // const checkSize = minNeighbourRadius;
-                    const checkSize = minNeighbourRadius * Math.SQRT2;
+                    const checkSize = collideRadius * Math.SQRT2;
                     // // todo - opt1
                     // const crossNodes = this._quadGrid.nbq([], 0,
                     //     jointX,
@@ -191,10 +192,10 @@ export class AStarFinder implements iAStar {
 
                     isValidNext = true;
 
-                    if (nw < collideRadius && nh < collideRadius) {
+                    if (nw < collideRadius || nh < collideRadius) {
                         if (nw < minNeighbourRadius || nh < minNeighbourRadius) {
                             isValidNext = false;    // this already checked on top
-                        } else if (level <= nlevel) {
+                        } else if (level <= nlevel) {   // node larger than neighbour
                             refNode = 0;
                             // the direction have twin cells
                             if (nx < x - w || nx > x + w) {         // < >
@@ -218,7 +219,18 @@ export class AStarFinder implements iAStar {
                             if (!refNode || this._quadGrid.ls[refNode] !== nlevel) {
                                 isValidNext = false;
                             }
-                        } else if (this._quadGrid.nbc(neighbour, collideRadius) === true) {
+                        } else if (level > nlevel) {    // node smaller than neighbour
+                            const parent = this._quadGrid.ps[node];
+                            if (x < nx - w) {           // from < to >
+
+                            } else if (x > nx + w) {    // from > to <
+
+                            } else if (y < ny - h) {    // from ^ to v
+
+                            } else if (y > ny + h) {    // from v to ^
+
+                            }
+                        } else {
                             isValidNext = false
                         }
                     }

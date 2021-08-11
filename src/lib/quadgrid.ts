@@ -155,6 +155,7 @@ export class QuadGrid implements iQuadGrid {
         return diffW <= 0 && diffH <= 0 && diffX - diffW >= 0 && diffY - diffH >= 0 && diffX + diffW <= 0 && diffY + diffH <= 0;
     }
 
+    // insert
     in(nodeIndex: number, rx, ry, rw, rh) {
         const indexOffset = nodeIndex * 4;
         const newCoverTest = this._covered(nodeIndex, rx, ry, rw, rh);
@@ -185,6 +186,7 @@ export class QuadGrid implements iQuadGrid {
         }
     }
 
+    // insert nodes
     ins(rects: iBound[]) {
         const start = typeof performance === "undefined" ? Date.now() : performance.now();
         rects.forEach(rect => {
@@ -194,7 +196,7 @@ export class QuadGrid implements iQuadGrid {
         return startUi - start;
     }
 
-    private _neighbourTopParentIndex(nodeIndex: number, rx: number, ry: number, rw: number, rh: number): number {
+    np(nodeIndex: number, rx: number, ry: number, rw: number, rh: number): number {
         const parentIndex = this.ps[nodeIndex];
         if (parentIndex === 0)
             return parentIndex;
@@ -205,21 +207,11 @@ export class QuadGrid implements iQuadGrid {
         if (inside) {
             return parentIndex;
         } else {
-            return this._neighbourTopParentIndex(parentIndex, rx, ry, rw, rh);
+            return this.np(parentIndex, rx, ry, rw, rh);
         }
     }
 
-    /**
-     * neighboursQuery
-     * @param {number[]} neighboursIndex
-     * @param nodeIndex
-     * @param rx
-     * @param ry
-     * @param rw
-     * @param rh
-     * @param minNeighbourRadius  min half size (radius) will be considered as a neighbour
-     * @returns {number[]}
-     */
+    // neighboursQuery
     nbq(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh, minNeighbourRadius = 0): number[] {
         if (minNeighbourRadius && (this.ws[nodeIndex] < minNeighbourRadius || this.hs[nodeIndex] < minNeighbourRadius)) {
             return;
@@ -250,11 +242,14 @@ export class QuadGrid implements iQuadGrid {
             ry = this.ys[nodeIndex];
         const rw = this.ws[nodeIndex] + extraBound;
         const rh = this.hs[nodeIndex] + extraBound;
-        const topParent = this._neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
+        const topParent = this.np(nodeIndex, rx, ry, rw, rh);
         return this.nbq([], topParent, rx, ry, rw, rh, minNeighbourRadius);
     }
 
-    private _neighbourCollideQuery(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh): number[] {
+    // neighbours collide query
+    nbcq(neighboursIndex: number[], nodeIndex, rx, ry, rw, rh): number[] {
+        if (neighboursIndex[-1] === 1) return neighboursIndex;
+
         const indexOffset = nodeIndex * 4;
         const indexOfRect = this._indexCoveredOnNode(nodeIndex, rx, ry, rw, rh);
         if (indexOfRect > 0) {
@@ -265,17 +260,17 @@ export class QuadGrid implements iQuadGrid {
                     neighboursIndex[-1] = 1;
                 }
             } else {
-                indexOfRect & 0b1 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset], rx, ry, rw, rh);
-                indexOfRect & 0b10 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset + 1], rx, ry, rw, rh);
-                indexOfRect & 0b100 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset + 2], rx, ry, rw, rh);
-                indexOfRect & 0b1000 && this._neighbourCollideQuery(neighboursIndex, this.ms[indexOffset + 3], rx, ry, rw, rh);
+                indexOfRect & 0b1 && this.nbcq(neighboursIndex, this.ms[indexOffset], rx, ry, rw, rh);
+                indexOfRect & 0b10 && this.nbcq(neighboursIndex, this.ms[indexOffset + 1], rx, ry, rw, rh);
+                indexOfRect & 0b100 && this.nbcq(neighboursIndex, this.ms[indexOffset + 2], rx, ry, rw, rh);
+                indexOfRect & 0b1000 && this.nbcq(neighboursIndex, this.ms[indexOffset + 3], rx, ry, rw, rh);
             }
         }
 
         return neighboursIndex;
     }
 
-    // neighbourCollide
+    // neighbours collide
     nbc(nodeIndex: number, collideRadius = 0): boolean {
         if (this.ws[nodeIndex] >= collideRadius && this.hs[nodeIndex] >= collideRadius) {
             return false;
@@ -285,23 +280,29 @@ export class QuadGrid implements iQuadGrid {
             ry = this.ys[nodeIndex],
             rw = collideRadius,
             rh = collideRadius;
-        const topParent = this._neighbourTopParentIndex(nodeIndex, rx, ry, rw, rh);
-        const neighboursCollideCheck = this._neighbourCollideQuery([], topParent, rx, ry, rw, rh);
+        const topParent = this.np(nodeIndex, rx, ry, rw, rh);
+        const neighboursCollideCheck = this.nbcq([], topParent, rx, ry, rw, rh);
         return neighboursCollideCheck[-1] === 1;
     }
 
-    // nodeOfPoint
-    np(nodeIndex: number, x: number, y: number): number {
+    // rectangle collide
+    rc(x, y, w, h): boolean {
+        const neighboursCollidedCheck = this.nbcq([], 0, x, y, w, h);
+        return neighboursCollidedCheck[-1] === 1;
+    }
+
+    // node of point
+    npt(nodeIndex: number, x: number, y: number): number {
         const indexOffset = nodeIndex * 4;
         if (this.ms[indexOffset] === 0) {
             return nodeIndex;
         } else {
             const indexOfPoint = this._indexPointedOnNode(nodeIndex, x, y);
             if (this.ms[indexOffset] > 0 && indexOfPoint > 0) {
-                if (indexOfPoint & 0b1) return this.np(this.ms[indexOffset], x, y);
-                else if (indexOfPoint & 0b10) return this.np(this.ms[indexOffset + 1], x, y);
-                else if (indexOfPoint & 0b100) return this.np(this.ms[indexOffset + 2], x, y);
-                else if (indexOfPoint & 0b1000) return this.np(this.ms[indexOffset + 3], x, y);
+                if (indexOfPoint & 0b1) return this.npt(this.ms[indexOffset], x, y);
+                else if (indexOfPoint & 0b10) return this.npt(this.ms[indexOffset + 1], x, y);
+                else if (indexOfPoint & 0b100) return this.npt(this.ms[indexOffset + 2], x, y);
+                else if (indexOfPoint & 0b1000) return this.npt(this.ms[indexOffset + 3], x, y);
             } else {
                 return nodeIndex;
             }

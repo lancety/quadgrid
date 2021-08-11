@@ -23,7 +23,7 @@ export class AStarFinder implements iAStar {
 
 
     _nodeOfPoint(x: number, y: number): number {
-        return this._quadGrid.np(0, x, y);
+        return this._quadGrid.npt(0, x, y);
     }
 
     _nodeX(nodeIndex: number): number {
@@ -70,7 +70,7 @@ export class AStarFinder implements iAStar {
 
         // if target node is very small, then look for larger neighbour (x2 at least >= minNeighbourRadius)
         if (minNeighbourRadius && (grid.ws[endNode] < minNeighbourRadius || grid.hs[endNode] < minNeighbourRadius)) {
-            const nbs = grid.nbs(endNode,minNeighbourRadius);
+            const nbs = grid.nbs(endNode, minNeighbourRadius);
             if (!nbs) return [];
             endNode = nbs.find(n => grid.ws[n] >= minNeighbourRadius && grid.hs[n] >= minNeighbourRadius);
             if (!endNode) return [];
@@ -89,7 +89,10 @@ export class AStarFinder implements iAStar {
         let heuristic = this._heuristic,
             weight = this._weight,
             abs = Math.abs, SQRT2 = Math.SQRT2,
-            node: number, neighbors: number[], neighbour: number, i, l, x, y, w, h, level, nx, ny, nw, nh, ng, nlevel;
+            node: number, neighbors: number[], neighbour: number,
+            i, l, x, y, w, h, level,
+            nx, ny, nw, nh, ng, nlevel,
+            isCross, isValidNext, refNode, refSmall, refLarge;
 
         // set the `g` and `f` value of the start node to be 0
         this._gArray[startNode] = 0;
@@ -129,9 +132,14 @@ export class AStarFinder implements iAStar {
                 if (this._closedArray[neighbour]) {
                     continue;
                 }
+                if (neighbour !== endNode) {
+                    if (nw < minNeighbourRadius || nh < minNeighbourRadius) {
+                        continue
+                    }
+                }
 
                 // level is opposite value, smaller value means upper level - bigger
-                let isCross = false;
+                isCross = false;
                 if (level < nlevel) {
                     // small neighbour cell is outside of big node cell
                     const sx = x - w, ex = x + w,
@@ -146,22 +154,34 @@ export class AStarFinder implements iAStar {
                     // same size node and neighbour cells are not aligned same x and y direction
                     isCross = x !== nx && y !== ny;  // neighbour is corner of this node
                 }
+
+
                 if (isCross) {
                     const jointX = nx > x ? x + w : x - w;
                     const jointY = ny > y ? y + h : y - h;
+                    // const checkSize = minNeighbourRadius;
                     const checkSize = minNeighbourRadius * Math.SQRT2;
-                    const crossNodes = this._quadGrid.nbq([], 0,
+                    // // todo - opt1
+                    // const crossNodes = this._quadGrid.nbq([], 0,
+                    //     jointX,
+                    //     jointY,
+                    //     checkSize,
+                    //     checkSize,
+                    // )
+                    //
+                    // // blocked - if cross cells are smaller than checkSize (gap between 2 cell on left and right)
+                    // const blocked = crossNodes.find(neighbour => {
+                    //     return this._quadGrid.ws[neighbour] < checkSize || this._quadGrid.hs[neighbour] < checkSize;
+                    // })
+                    // if (blocked) continue;
+
+                    // todo - opt2
+                    if (this._quadGrid.rc(
                         jointX,
                         jointY,
                         checkSize,
                         checkSize,
-                    )
-
-                    // blocked - if cross cells are smaller than checkSize (gap between 2 cell on left and right)
-                    const blocked = crossNodes.find(neighbour => {
-                        return this._quadGrid.ws[neighbour] < checkSize || this._quadGrid.hs[neighbour] < checkSize;
-                    })
-                    if (blocked) continue;
+                    )) continue;
                 } else {
                     if (neighbour === endNode) {
                         const path = this._backtrace(node);
@@ -169,17 +189,40 @@ export class AStarFinder implements iAStar {
                         return path;
                     }
 
-                    if (level < nlevel && nw >= minNeighbourRadius && nh >= minNeighbourRadius && nw < collideRadius && nh < collideRadius){
-                        // if (nx ) {
-                        //     // x direction have twin cells
-                        // } else if () {
-                        //     // y direction have twin cells
-                        // }
-                    }
+                    isValidNext = true;
 
-                    if (nw < collideRadius || nh < collideRadius) {
-                        continue;  // if 2 cells are are not big enough
+                    if (nw < collideRadius && nh < collideRadius) {
+                        if (nw < minNeighbourRadius || nh < minNeighbourRadius) {
+                            isValidNext = false;    // this already checked on top
+                        } else if (level <= nlevel) {
+                            refNode = 0;
+                            // the direction have twin cells
+                            if (nx < x - w || nx > x + w) {         // < >
+                                refSmall = ny - nh - 1;
+                                refLarge = ny + nh + 1;
+                                if (refSmall > y - h) {  // top cell is inside y range of node
+                                    refNode = this._quadGrid.npt(0, nx, refSmall);
+                                } else if (refLarge < y + h) {   // bottom cell is inside y range of node
+                                    refNode = this._quadGrid.npt(0, nx, refLarge);
+                                }
+                            } else if (ny < y - h || ny > y + h) {  // ^ v
+                                refSmall = nx - nw - 1;
+                                refLarge = nx + nw + 1;
+                                if (refSmall > x - w) {  // left cell is inside x range of node
+                                    refNode = this._quadGrid.npt(0, refSmall, ny);
+                                } else if (refLarge < x + w) {   // right cell is inside x range of node
+                                    refNode = this._quadGrid.npt(0, refLarge, ny);
+                                }
+                            }
+
+                            if (!refNode || this._quadGrid.ls[refNode] !== nlevel) {
+                                isValidNext = false;
+                            }
+                        } else if (this._quadGrid.nbc(neighbour, collideRadius) === true) {
+                            isValidNext = false
+                        }
                     }
+                    if (isValidNext === false) continue;
                 }
 
                 // get the distance between current node and the neighbor

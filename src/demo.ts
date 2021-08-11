@@ -50,7 +50,7 @@ canvas.addEventListener("mousemove", function (e: any) {
         e.offsetY = e.layerY - e.target.offsetTop;
     }
     states.focus = [e.offsetX, e.offsetY];
-    const nodeIndex = grid.np(0, e.offsetX, e.offsetY);
+    const nodeIndex = grid.npt(0, e.offsetX, e.offsetY);
     states.pathTo = [grid.xs[nodeIndex], grid.ys[nodeIndex]];
 
     if (states.pathToNode !== nodeIndex) {
@@ -81,7 +81,7 @@ canvas.addEventListener("mouseout", function (e) {
     while (!newFrom) {
         states.pathFrom[0] = Math.random() * width;
         states.pathFrom[1] = Math.random() * height;
-        const isBlocker = grid.ts[grid.np(0, states.pathFrom[0], states.pathFrom[1])];
+        const isBlocker = grid.ts[grid.npt(0, states.pathFrom[0], states.pathFrom[1])];
         if (isBlocker === 0) {
             newFrom = true;
         }
@@ -109,7 +109,7 @@ function _updateUI() {
 
     states.neighbours.clear();
     if (states.focusActive) {
-        const nodeOfPoint = grid.np(0, states.focus[0], states.focus[1]);
+        const nodeOfPoint = grid.npt(0, states.focus[0], states.focus[1]);
         // console.log(states.focus, grid.nodeX[nodeOfPoint], grid.nodeY[nodeOfPoint], grid.nodeW[nodeOfPoint], grid.nodeH[nodeOfPoint], grid.nodesLevel[nodeOfPoint])
         grid.ts[nodeOfPoint] === 0 && grid.nbs(nodeOfPoint).forEach(neighbourIndex => {
             states.neighbours.add(neighbourIndex);
